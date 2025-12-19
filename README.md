@@ -10,7 +10,7 @@ A tiny single-file Ruby wrapper around [`nctl`](https://github.com/ninech/nctl) 
 ## Install
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/CuddlyBunion341/deploio-cli/main/setup | zsh
+curl -fsSL https://raw.githubusercontent.com/cb341/deploio-cli/main/setup | zsh
 ```
 
 If `~/.local/bin` isn’t on your PATH, add this to `~/.zshrc`:
