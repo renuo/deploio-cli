@@ -1,62 +1,199 @@
 # deploio-cli (deploio / depl)
 
-A tiny single-file Ruby wrapper around [`nctl`](https://github.com/ninech/nctl) to make common app operations concise. The CLI is named `deploio` with shorthand `depl`.
+A CLI for [Deploio](https://www.deplo.io/) that wraps [`nctl`](https://github.com/ninech/nctl) commands with a simpler interface.
 
 ## Requirements
 
-- nctl version 1.10.0 or higher (with JSON output support)
-- bash
+- Ruby 3.0+
+- nctl version 1.10.0 or higher
 
-## Install
+## Installation
 
-```zsh
-curl -fsSL https://raw.githubusercontent.com/cb341/deploio-cli/main/setup | zsh
+### From source (development)
+
+```bash
+git clone https://github.com/renuo/deploio-cli.git
+cd deploio-cli
+bundle install
+bundle exec bin/deploio --help
 ```
 
-If `~/.local/bin` isn’t on your PATH, add this to `~/.zshrc`:
-```sh
-export PATH="$HOME/.local/bin:$PATH"
+### As a gem (coming soon)
+
+```bash
+gem install deploio-cli
 ```
+
+## Shell Completion
+
+Enable autocompletion by adding this to your `~/.zshrc` or `~/.bashrc`, or whatever you use:
+
+```bash
+eval "$(deploio completion)"
+```
+
+After setup, completions work for:
+- Commands: `deploio <TAB>` → shows all commands and subcommands
+- Options: `deploio logs --<TAB>` → shows --tail, --lines, --app, etc.
+- Apps (dynamic): `deploio logs --app <TAB>` → fetches available apps from server
+
+## Configuration
+
+### App naming convention
+
+Apps are referenced using `<project>-<app>` format, where:
+- `project` is your Deploio project name (e.g., `deploio-landing-page`)
+- `app` is the environment/app name (e.g., `develop`, `production`)
+
+Example: `deploio-landing-page-develop`
+
+### Automatic app detection
+
+When you run a command without `--app`, the CLI will automatically detect the app by matching your git remote URL against nctl apps:
+
+```bash
+cd ~/projects/deploio-landing-page
+deploio logs --tail  # Automatically detects app from git remote
+```
+
+If multiple apps match (e.g., develop and production), you'll be prompted to select one.
 
 ## Usage
 
-```sh
-deploio (deplo.io app CLI)
+```
+deploio - CLI for Deploio (wraps nctl)
 
-Usage:
-  deploio <command> [args]
+AUTHENTICATION
+  deploio auth:login              Authenticate with nctl
+  deploio auth:logout             Log out
+  deploio auth:whoami             Show current user and organization
+  deploio login                   Shortcut for auth:login
 
-Commands:
-  login                                Authenticate with nctl
-  new <project-env>                    Create project and app (git url inferred)
-  list                                 List apps as <project>-<env>
-  logs <project-env> [-- ...args]      Stream logs for app
-  exec <project-env> [-- ...args]      Exec into app
-  stats <project-env>                  Show app stats
-  config <project-env>                 Show app config (yaml)
-  config:edit <project-env>            Edit app config
-  hosts <project-env>                  Print app hosts
+APPS
+  deploio apps                    List all apps
+  deploio apps:info -a APP        Show app details
+  deploio apps:create NAME        Create new app
+  deploio apps:delete -a APP      Delete an app
 
-Global flags (before command):
-  --org-prefix <prefix>                Default: renuo
-  --dry-run                            Print commands without executing
+LOGS
+  deploio logs -a APP             Show recent logs
+  deploio logs -a APP --tail      Stream logs continuously
+  deploio logs -a APP -n 200      Show last N lines
+
+EXECUTION
+  deploio exec -a APP -- CMD      Run command in app container
+  deploio run -a APP -- CMD       Alias for exec
+
+CONFIG
+  deploio config -a APP           Show config vars
+  deploio config:edit -a APP      Edit app config in editor
+  deploio config:set K=V -a APP   Set config variable
+
+STATUS
+  deploio status -a APP           Show app stats
+  deploio hosts -a APP            List app hostnames
+
+OTHER
+  deploio completion              Generate shell completion script
+  deploio version                 Show version
+
+FLAGS
+  -a, --app APP                   App in <project>-<app> format
+  -o, --org ORG                   Organization
+  --dry-run                       Print commands without executing
+  --no-color                      Disable colored output
 ```
 
-## Features
+## Examples
 
-- **Shorthand alias**: Use `depl` instead of `deploio` for faster typing
-- **Git URL inference**: Automatically constructs GitHub URLs from project names
-- **Auto project creation**: Creates projects if they don't exist when running `new`
-- **Dry-run mode**: Preview commands with `--dry-run` without executing them
-- **Smart validation**: Validates project-env exists before running commands
-- **Command and project-env typo suggestions** via `did_you_mean`
-- **Contextual help**: Run `deploio <command> --help` for command-specific help
-- **Single file**: Zero dependencies beyond Ruby stdlib and `did_you_mean`
+### Authentication
 
-Examples:
-```sh
+```bash
+# Login to nctl
 deploio login
-deploio new fizzbuzz-main
-depl logs fizzbuzz-main
-deploio exec fizzbuzz-main -- -c 'echo hi'
+
+# Check current user
+deploio auth:whoami
 ```
+
+### Working with apps
+
+```bash
+# List all apps
+deploio apps
+
+# Create a new app
+deploio apps:create myproject-staging --git-url git@github.com:myorg/myrepo.git
+
+# Show app info
+deploio apps:info -a myproject-staging
+
+# Delete an app
+deploio apps:delete -a myproject-staging
+```
+
+### Logs and execution
+
+```bash
+# View logs
+deploio logs -a deploio-landing-page-develop
+
+# Stream logs
+deploio logs -a deploio-landing-page-develop --tail
+
+# Run a command
+deploio exec -a deploio-landing-page-develop -- rails console
+
+# With git remote matching (auto-detected)
+cd ~/projects/deploio-landing-page
+deploio logs --tail
+deploio exec -- rails console
+```
+
+### Configuration
+
+```bash
+# View config vars
+deploio config -a myproject-staging
+
+# Edit config
+deploio config:edit -a myproject-staging
+```
+
+## Development
+
+### Running tests
+
+```bash
+bundle exec rake test
+```
+
+### Building the gem
+
+```bash
+gem build deploio-cli.gemspec
+```
+
+### Testing commands
+
+The best way to test the commands in the shell is to temporarly set:
+
+```shell
+export PATH="$PWD/bin:$PATH"
+```
+
+to have the `deploio` command binded to the current one, and
+
+```shell
+eval "$(deploio completion)"
+```
+
+to refresh the autocompletion options.
+
+## License
+
+MIT
+
+## Copyright
+
+Renuo AG
