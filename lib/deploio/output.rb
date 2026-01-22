@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'tty-table'
-require 'pastel'
+require "tty-table"
+require "pastel"
 
 # Utility module for formatted console output
 module Deploio
@@ -23,7 +23,7 @@ module Deploio
       end
 
       def error(message)
-        $stderr.puts pastel.red("✗ #{message}")
+        warn pastel.red("✗ #{message}")
       end
 
       def warning(message)

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
+$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 
-require 'deploio'
-require 'minitest/autorun'
-require 'fileutils'
-require 'tmpdir'
+require "deploio"
+require "minitest/autorun"
+require "fileutils"
+require "tmpdir"

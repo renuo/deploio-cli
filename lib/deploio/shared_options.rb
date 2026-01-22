@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require 'open3'
+require "open3"
 
 module Deploio
   module SharedOptions
     def self.included(base)
-      base.class_option :app, aliases: '-a', type: :string, desc: 'App in <project>-<app> format'
-      base.class_option :org, aliases: '-o', type: :string, desc: 'Organization'
-      base.class_option :dry_run, type: :boolean, default: false, desc: 'Print commands without executing'
-      base.class_option :no_color, type: :boolean, default: false, desc: 'Disable colored output'
+      base.class_option :app, aliases: "-a", type: :string, desc: "App in <project>-<app> format"
+      base.class_option :org, aliases: "-o", type: :string, desc: "Organization"
+      base.class_option :dry_run, type: :boolean, default: false, desc: "Print commands without executing"
+      base.class_option :no_color, type: :boolean, default: false, desc: "Disable colored output"
 
       base.define_singleton_method(:exit_on_failure?) { true }
     end
@@ -18,12 +18,10 @@ module Deploio
     # Merges parent CLI options with subcommand options.
     # Parent options take precedence over subcommand defaults.
     def merged_options
-      @merged_options ||= begin
-                            options
-                              .to_h
-                              .merge(parent_options.to_h) { |_key, sub, par| par.nil? ? sub : par }
-                              .transform_keys(&:to_sym)
-                          end
+      @merged_options ||= options
+        .to_h
+        .merge(parent_options.to_h) { |_key, sub, par| par.nil? ? sub : par }
+        .transform_keys(&:to_sym)
     end
 
     def setup_options
@@ -39,6 +37,5 @@ module Deploio
       Output.error(e.message)
       exit 1
     end
-
   end
 end

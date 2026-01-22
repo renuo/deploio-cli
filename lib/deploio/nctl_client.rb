@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require 'json'
-require 'open3'
+require "json"
+require "open3"
 
 module Deploio
   class NctlClient
-    REQUIRED_VERSION = '1.10.0'
+    REQUIRED_VERSION = "1.10.0"
 
     attr_reader :dry_run
 
@@ -20,34 +20,34 @@ module Deploio
 
     def logs(app_ref, tail: false, lines: 100)
       args = ["--lines=#{lines}"]
-      args << '-f' if tail
-      exec_passthrough('logs', 'app', app_ref.app_name,
-                       '--project', app_ref.project_name,
-                       *args)
+      args << "-f" if tail
+      exec_passthrough("logs", "app", app_ref.app_name,
+        "--project", app_ref.project_name,
+        *args)
     end
 
     def exec_command(app_ref, command)
-      exec_passthrough('exec', 'app', app_ref.app_name,
-                       '--project', app_ref.project_name,
-                       '--', *command)
+      exec_passthrough("exec", "app", app_ref.app_name,
+        "--project", app_ref.project_name,
+        "--", *command)
     end
 
     def get_all_apps
       @all_apps ||= begin
-                      output = capture('get', 'apps', '-A', '-o', 'json')
-                      return [] if output.nil? || output.empty?
+        output = capture("get", "apps", "-A", "-o", "json")
+        return [] if output.nil? || output.empty?
 
-                      data = JSON.parse(output)
-                      data.is_a?(Array) ? data : (data['items'] || [])
-                    rescue JSON::ParserError
-                      []
-                    end
+        data = JSON.parse(output)
+        data.is_a?(Array) ? data : (data["items"] || [])
+      rescue JSON::ParserError
+        []
+      end
     end
 
     def get_app(app_ref)
-      output = capture('get', 'app', app_ref.app_name,
-                       '--project', app_ref.project_name,
-                       '-o', 'json')
+      output = capture("get", "app", app_ref.app_name,
+        "--project", app_ref.project_name,
+        "-o", "json")
       return {} if output.nil? || output.empty?
 
       JSON.parse(output)
@@ -56,52 +56,52 @@ module Deploio
     end
 
     def get_app_stats(app_ref)
-      capture('get', 'app', app_ref.app_name,
-              '--project', app_ref.project_name,
-              '-o', 'stats')
+      capture("get", "app", app_ref.app_name,
+        "--project", app_ref.project_name,
+        "-o", "stats")
     end
 
     def edit_app(app_ref)
-      exec_passthrough('edit', 'app', app_ref.app_name,
-                       '--project', app_ref.project_name)
+      exec_passthrough("edit", "app", app_ref.app_name,
+        "--project", app_ref.project_name)
     end
 
-    def create_app(project, app_name, git_url:, git_revision:, size: 'mini')
-      run('create', 'app', app_name,
-          '--project', project,
-          '--git-url', git_url,
-          '--git-revision', git_revision,
-          '--size', size)
+    def create_app(project, app_name, git_url:, git_revision:, size: "mini")
+      run("create", "app", app_name,
+        "--project", project,
+        "--git-url", git_url,
+        "--git-revision", git_revision,
+        "--size", size)
     end
 
     def delete_app(app_ref)
-      run('delete', 'app', app_ref.app_name,
-          '--project', app_ref.project_name)
+      run("delete", "app", app_ref.app_name,
+        "--project", app_ref.project_name)
     end
 
     def create_project(project_name)
-      run('create', 'project', project_name)
+      run("create", "project", project_name)
     end
 
     def get_projects
-      output = capture('get', 'projects', '-o', 'json')
+      output = capture("get", "projects", "-o", "json")
       return [] if output.nil? || output.empty?
 
       data = JSON.parse(output)
-      data.is_a?(Array) ? data : (data['items'] || [])
+      data.is_a?(Array) ? data : (data["items"] || [])
     rescue JSON::ParserError
       []
     end
 
     def get_orgs
-      output = capture('auth', 'whoami')
+      output = capture("auth", "whoami")
       return [] if output.nil? || output.empty?
 
       parse_orgs_from_whoami(output)
     end
 
     def current_org
-      get_orgs.find { |o| o['current'] }&.fetch('name', nil)
+      get_orgs.find { |o| o["current"] }&.fetch("name", nil)
     end
 
     def parse_orgs_from_whoami(output)
@@ -109,39 +109,39 @@ module Deploio
       in_orgs_section = false
 
       output.each_line do |line|
-        if line.include?('Available Organizations:')
+        if line.include?("Available Organizations:")
           in_orgs_section = true
           next
         end
 
         next unless in_orgs_section
-        break if line.strip.empty? || line.start_with?('To switch')
+        break if line.strip.empty? || line.start_with?("To switch")
 
         # Lines are either "*\torg_name" (current) or "\torg_name"
-        current = line.start_with?('*')
-        org_name = line.sub(/^\*?\t/, '').strip
+        current = line.start_with?("*")
+        org_name = line.sub(/^\*?\t/, "").strip
         next if org_name.empty?
 
-        orgs << { 'name' => org_name, 'current' => current }
+        orgs << {"name" => org_name, "current" => current}
       end
 
       orgs
     end
 
     def set_org(org_name)
-      run('auth', 'set-org', org_name)
+      run("auth", "set-org", org_name)
     end
 
     def auth_login
-      exec_passthrough('auth', 'login')
+      exec_passthrough("auth", "login")
     end
 
     def auth_logout
-      run('auth', 'logout')
+      run("auth", "logout")
     end
 
     def auth_whoami
-      exec_passthrough('auth', 'whoami')
+      exec_passthrough("auth", "whoami")
     end
 
     private
@@ -150,7 +150,7 @@ module Deploio
     # commands that modify state (create, delete) where we show output but don't need to parse it.
     def run(*args)
       cmd = build_command(args)
-      Output.command(cmd.join(' '))
+      Output.command(cmd.join(" "))
       if dry_run
         true
       else
@@ -162,7 +162,7 @@ module Deploio
     # (logs -f, exec, edit, auth) that need direct terminal access. Never returns.
     def exec_passthrough(*args)
       cmd = build_command(args)
-      Output.command(cmd.join(' '))
+      Output.command(cmd.join(" "))
       if dry_run
         true
       else
@@ -175,8 +175,8 @@ module Deploio
     def capture(*args)
       cmd = build_command(args)
       if dry_run
-        Output.command(cmd.join(' '))
-        ''
+        Output.command(cmd.join(" "))
+        ""
       else
         stdout, stderr, status = Open3.capture3(*cmd)
         unless status.success?
@@ -188,19 +188,19 @@ module Deploio
     end
 
     def build_command(args)
-      ['nctl'] + args.map(&:to_s)
+      ["nctl"] + args.map(&:to_s)
     end
 
     def check_nctl_installed
-      _stdout, _stderr, status = Open3.capture3('nctl', '--version')
+      _stdout, _stderr, status = Open3.capture3("nctl", "--version")
       return if status.success?
 
       raise Deploio::NctlError,
-            "nctl not found. Please install it: https://github.com/ninech/nctl"
+        "nctl not found. Please install it: https://github.com/ninech/nctl"
     end
 
     def check_nctl_version
-      stdout, _stderr, _status = Open3.capture3('nctl', '--version')
+      stdout, _stderr, _status = Open3.capture3("nctl", "--version")
       version_match = stdout.match(/(\d+\.\d+\.\d+)/)
       return unless version_match
 
@@ -208,7 +208,7 @@ module Deploio
       return unless Gem::Version.new(version) < Gem::Version.new(REQUIRED_VERSION)
 
       raise Deploio::NctlError,
-            "nctl version #{version} is too old. Need #{REQUIRED_VERSION}+. Run: brew upgrade nctl"
+        "nctl version #{version} is too old. Need #{REQUIRED_VERSION}+. Run: brew upgrade nctl"
     end
   end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'test_helper'
+require "test_helper"
 
 class OutputTest < Minitest::Test
   def setup
@@ -13,28 +13,28 @@ class OutputTest < Minitest::Test
   end
 
   def test_success_message
-    out, = capture_io { Deploio::Output.success('Operation complete') }
+    out, = capture_io { Deploio::Output.success("Operation complete") }
     assert_match(/✓ Operation complete/, out)
   end
 
   def test_error_message
-    _, err = capture_io { Deploio::Output.error('Something went wrong') }
+    _, err = capture_io { Deploio::Output.error("Something went wrong") }
 
     assert_match(/✗ Something went wrong/, err)
   end
 
   def test_warning_message
-    out, = capture_io { Deploio::Output.warning('Caution advised') }
+    out, = capture_io { Deploio::Output.warning("Caution advised") }
     assert_match(/! Caution advised/, out)
   end
 
   def test_info_message
-    out, = capture_io { Deploio::Output.info('Processing') }
+    out, = capture_io { Deploio::Output.info("Processing") }
     assert_match(/→ Processing/, out)
   end
 
   def test_command_message
-    out, = capture_io { Deploio::Output.command('nctl get apps') }
+    out, = capture_io { Deploio::Output.command("nctl get apps") }
 
     assert_match(/> nctl get apps/, out)
   end

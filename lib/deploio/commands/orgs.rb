@@ -5,13 +5,13 @@ module Deploio
     class Orgs < Thor
       include SharedOptions
 
-      namespace 'orgs'
+      namespace "orgs"
 
-      class_option :json, type: :boolean, default: false, desc: 'Output as JSON'
+      class_option :json, type: :boolean, default: false, desc: "Output as JSON"
 
       default_task :list
 
-      desc 'list', 'List all organizations'
+      desc "list", "List all organizations"
       def list
         setup_options
         raw_orgs = @nctl.get_orgs
@@ -22,22 +22,22 @@ module Deploio
         end
 
         if raw_orgs.empty?
-          Output.warning('No organizations found') unless merged_options[:dry_run]
+          Output.warning("No organizations found") unless merged_options[:dry_run]
           return
         end
 
         rows = raw_orgs.map do |org|
-          current_marker = org['current'] ? '*' : ''
+          current_marker = org["current"] ? "*" : ""
           [
             current_marker,
-            presence(org['name'])
+            presence(org["name"])
           ]
         end
 
-        Output.table(rows, headers: ['', 'ORGANIZATION'])
+        Output.table(rows, headers: ["", "ORGANIZATION"])
       end
 
-      desc 'set ORG_NAME', 'Set the current organization'
+      desc "set ORG_NAME", "Set the current organization"
       def set(org_name)
         setup_options
         @nctl.set_org(org_name)
@@ -46,8 +46,8 @@ module Deploio
 
       private
 
-      def presence(value, default: '-')
-        value.nil? || value.to_s.empty? ? default : value
+      def presence(value, default: "-")
+        (value.nil? || value.to_s.empty?) ? default : value
       end
     end
   end

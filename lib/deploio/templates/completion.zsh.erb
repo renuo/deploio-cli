@@ -1,0 +1,126 @@
+#compdef <%= program_name %> depl
+
+# Zsh completion for <%= program_name %>-cli
+# Auto-generated from Thor command definitions
+# Enable with: eval "$(<%= program_name %> completion)"
+
+# Dynamic completion for organizations
+_<%= program_name %>_orgs_list() {
+  local -a orgs
+  orgs=(${(f)"$(<%= program_name %> orgs --json 2>/dev/null | ruby -rjson -e '
+    data = JSON.parse(STDIN.read) rescue []
+    data.each do |o|
+      name = o["name"] || ""
+      current = o["current"] ? " (current)" : ""
+      puts "#{name}:#{name}#{current}"
+    end
+  ' 2>/dev/null)"})
+
+  if [[ ${#orgs[@]} -gt 0 ]]; then
+    _describe -t orgs 'available organizations' orgs
+  else
+    _message 'organization name'
+  fi
+}
+
+# Dynamic completion for apps
+_<%= program_name %>_apps_list() {
+  local -a apps
+  apps=(${(f)"$(<%= program_name %> apps --json 2>/dev/null | ruby -rjson -e '
+    data = JSON.parse(STDIN.read) rescue []
+    orgs_json = `<%= program_name %> orgs --json 2>/dev/null` rescue "[]"
+    orgs = JSON.parse(orgs_json) rescue []
+    current_org = orgs.find { |o| o["current"] }&.fetch("name", nil)
+
+    data.each do |a|
+      ns = a.dig("metadata", "namespace") || ""
+      name = a.dig("metadata", "name") || ""
+      project = current_org && ns.start_with?("#{current_org}-") ? ns.delete_prefix("#{current_org}-") : ns
+      short_name = "#{project}-#{name}"
+      puts "#{short_name}:#{project}/#{name}"
+    end
+  ' 2>/dev/null)"})
+
+  if [[ ${#apps[@]} -gt 0 ]]; then
+    _describe -t apps 'available apps' apps
+  else
+    _message 'app (format: project-appname)'
+  fi
+}
+
+<% subcommands.each do |name, commands, class_options| %>
+# <%= name %> subcommand
+_<%= program_name %>_<%= name %>() {
+  local -a <%= name %>_commands
+  <%= name %>_commands=(
+<% commands.each do |cmd_name, desc| -%>
+    '<%= cmd_name %>:<%= escape(desc) %>'
+<% end -%>
+  )
+
+  _arguments -s \
+    '1:<%= name %> command:-><%= name %>_cmd' \
+    '*::<%= name %> args:-><%= name %>_args'
+
+  case "$state" in
+    <%= name %>_cmd)
+      _describe -t commands '<%= name %> commands' <%= name %>_commands
+      ;;
+    <%= name %>_args)
+      case "$words[1]" in
+<% commands.each do |cmd_name, _, options| -%>
+        <%= cmd_name %>)
+          _arguments -s \
+<%= format_options(options, class_options, positional_arg(name, cmd_name)) %>
+          ;;
+<% end -%>
+      esac
+      ;;
+  esac
+}
+<% end %>
+
+# Main completion function
+_<%= program_name %>() {
+  local -a main_commands
+  main_commands=(
+<% main_commands.each do |name, desc| -%>
+    '<%= name %>:<%= escape(desc) %>'
+<% end -%>
+  )
+
+  _arguments -s \
+    '(-v --version)'{-v,--version}'[Show version]' \
+    '1:command:->cmd' \
+    '*::command args:->args'
+
+  case "$state" in
+    cmd)
+      _describe -t commands '<%= program_name %> commands' main_commands
+      ;;
+    args)
+      case "$words[1]" in
+<% subcommands.each do |name, _, _| -%>
+        <%= name %>)
+          _<%= program_name %>_<%= name %>
+          ;;
+<% end -%>
+<% direct_commands.each do |cmd_name, options| -%>
+        <%= cmd_name %>)
+          _arguments -s \
+<%= format_options(options, cli_class_options) %>
+          ;;
+<% end -%>
+<% passthrough_commands.each do |cmd_name, options| -%>
+        <%= cmd_name %>)
+          _arguments -s \
+<%= format_options(options, cli_class_options, "'*:command:_normal'") %>
+          ;;
+<% end -%>
+      esac
+      ;;
+  esac
+}
+
+# Register the completion function
+compdef _<%= program_name %> <%= program_name %> depl

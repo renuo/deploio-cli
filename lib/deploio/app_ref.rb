@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'did_you_mean'
+require "did_you_mean"
 
 # AppRef represents a reference to a deploio application.
 module Deploio

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'test_helper'
+require "test_helper"
 
 class AppResolverTest < Minitest::Test
   def setup
@@ -12,7 +12,7 @@ class AppResolverTest < Minitest::Test
     resolver = Deploio::AppResolver.new(nctl_client: @nctl)
 
     error = assert_raises(Deploio::AppNotFoundError) do
-      resolver.resolve(app_name: 'myproject-staging')
+      resolver.resolve(app_name: "myproject-staging")
     end
 
     assert_match(/App not found/, error.message)
@@ -29,42 +29,42 @@ class AppResolverTest < Minitest::Test
 
   def test_resolves_from_available_apps
     nctl = MockNctlClient.new(apps: [
-      { 'metadata' => { 'namespace' => 'n10518', 'name' => 'develop' } }
+      {"metadata" => {"namespace" => "n10518", "name" => "develop"}}
     ])
     resolver = Deploio::AppResolver.new(nctl_client: nctl)
 
-    result = resolver.resolve(app_name: 'n10518-develop')
+    result = resolver.resolve(app_name: "n10518-develop")
 
-    assert_equal 'n10518', result.project_name
-    assert_equal 'develop', result.app_name
+    assert_equal "n10518", result.project_name
+    assert_equal "develop", result.app_name
   end
 
   def test_resolves_short_name_with_current_org
     nctl = MockNctlClient.new(
-      apps: [{ 'metadata' => { 'namespace' => 'myorg-myproject', 'name' => 'staging' } }],
-      current_org: 'myorg'
+      apps: [{"metadata" => {"namespace" => "myorg-myproject", "name" => "staging"}}],
+      current_org: "myorg"
     )
     resolver = Deploio::AppResolver.new(nctl_client: nctl)
 
     # Can resolve using short name (without org prefix)
-    result = resolver.resolve(app_name: 'myproject-staging')
+    result = resolver.resolve(app_name: "myproject-staging")
 
-    assert_equal 'myorg-myproject', result.project_name
-    assert_equal 'staging', result.app_name
+    assert_equal "myorg-myproject", result.project_name
+    assert_equal "staging", result.app_name
   end
 
   def test_short_name_for_strips_org_prefix
-    nctl = MockNctlClient.new(current_org: 'myorg')
+    nctl = MockNctlClient.new(current_org: "myorg")
     resolver = Deploio::AppResolver.new(nctl_client: nctl)
 
-    assert_equal 'myproject-staging', resolver.short_name_for('myorg-myproject', 'staging')
+    assert_equal "myproject-staging", resolver.short_name_for("myorg-myproject", "staging")
   end
 
   def test_short_name_for_keeps_full_name_without_org
     nctl = MockNctlClient.new(current_org: nil)
     resolver = Deploio::AppResolver.new(nctl_client: nctl)
 
-    assert_equal 'someorg-myproject-staging', resolver.short_name_for('someorg-myproject', 'staging')
+    assert_equal "someorg-myproject-staging", resolver.short_name_for("someorg-myproject", "staging")
   end
 
   class MockNctlClient
@@ -77,8 +77,6 @@ class AppResolverTest < Minitest::Test
       @apps
     end
 
-    def current_org
-      @current_org
-    end
+    attr_reader :current_org
   end
 end

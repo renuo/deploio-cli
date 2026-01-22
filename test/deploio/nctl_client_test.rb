@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require 'test_helper'
+require "test_helper"
 
 class NctlClientTest < Minitest::Test
   def setup
     @client = Deploio::NctlClient.new(dry_run: true)
     available_apps = {
-      'renuotest-myproject-staging' => { project_name: 'renuotest-myproject', app_name: 'staging' }
+      "renuotest-myproject-staging" => {project_name: "renuotest-myproject", app_name: "staging"}
     }
-    @app_ref = Deploio::AppRef.new('renuotest-myproject-staging', available_apps: available_apps)
+    @app_ref = Deploio::AppRef.new("renuotest-myproject-staging", available_apps: available_apps)
   end
 
   def test_dry_run_mode
