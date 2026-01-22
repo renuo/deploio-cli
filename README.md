@@ -4,7 +4,7 @@ A CLI for [Deploio](https://www.deplo.io/) that wraps [`nctl`](https://github.co
 
 ## Requirements
 
-- Ruby 3.0+
+- Ruby 3.3+
 - nctl version 1.10.0 or higher
 
 ## Installation
@@ -72,8 +72,6 @@ AUTHENTICATION
 APPS
   deploio apps                    List all apps
   deploio apps:info -a APP        Show app details
-  deploio apps:create NAME        Create new app
-  deploio apps:delete -a APP      Delete an app
 
 LOGS
   deploio logs -a APP             Show recent logs
@@ -83,15 +81,6 @@ LOGS
 EXECUTION
   deploio exec -a APP -- CMD      Run command in app container
   deploio run -a APP -- CMD       Alias for exec
-
-CONFIG
-  deploio config -a APP           Show config vars
-  deploio config:edit -a APP      Edit app config in editor
-  deploio config:set K=V -a APP   Set config variable
-
-STATUS
-  deploio status -a APP           Show app stats
-  deploio hosts -a APP            List app hostnames
 
 OTHER
   deploio completion              Generate shell completion script
@@ -122,14 +111,9 @@ deploio auth:whoami
 # List all apps
 deploio apps
 
-# Create a new app
-deploio apps:create myproject-staging --git-url git@github.com:myorg/myrepo.git
-
 # Show app info
 deploio apps:info -a myproject-staging
 
-# Delete an app
-deploio apps:delete -a myproject-staging
 ```
 
 ### Logs and execution
@@ -148,16 +132,6 @@ deploio exec -a deploio-landing-page-develop -- rails console
 cd ~/projects/deploio-landing-page
 deploio logs --tail
 deploio exec -- rails console
-```
-
-### Configuration
-
-```bash
-# View config vars
-deploio config -a myproject-staging
-
-# Edit config
-deploio config:edit -a myproject-staging
 ```
 
 ## Development
