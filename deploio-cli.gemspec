@@ -18,6 +18,13 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
 
+  spec.post_install_message = <<~MSG
+    To enable shell autocompletion for deploio, add this to your ~/.zshrc:
+
+        eval "$(deploio completion)"
+
+  MSG
+
   spec.files = Dir.chdir(__dir__) do
     `git ls-files -z`.split("\x0").reject do |f|
       (File.expand_path(f) == __FILE__) ||
