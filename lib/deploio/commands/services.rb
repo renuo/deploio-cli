@@ -16,15 +16,12 @@ module Deploio
         desc: "Filter by project name"
       method_option :url, aliases: "-u", type: :boolean, default: false,
         desc: "Show connection URL for each service (requires --project)"
+      method_option :connected_apps, aliases: "-c", type: :boolean, default: false,
+        desc: "Show apps connected to each service (requires --project)"
       def list
         setup_options
 
-        if merged_options[:url] && !merged_options[:project]
-          Output.error("The --url option requires --project to be specified")
-          Output.info("Fetching URLs for all services is too slow. Please filter by project first.")
-          Output.info("Example: deploio services -p myproject --url")
-          exit 1
-        end
+        validate_project_required_options!
 
         project = merged_options[:project] ? resolve_project(merged_options[:project]) : nil
         all_services = @nctl.get_all_services(project: project)
@@ -41,7 +38,17 @@ module Deploio
         end
 
         show_url = merged_options[:url]
+        show_connected_apps = merged_options[:connected_apps]
         current_org = @nctl.current_org
+
+        # Pre-fetch apps and their env vars if we need to show connected apps
+        apps_by_project = {}
+        if show_connected_apps
+          all_services.map { |s| s.dig("metadata", "namespace") }.uniq.each do |ns|
+            apps_by_project[ns] = @nctl.get_apps_by_project(ns)
+          end
+        end
+
         rows = all_services.map do |service|
           metadata = service["metadata"] || {}
           status = service["status"] || {}
@@ -59,9 +66,17 @@ module Deploio
             presence(ready_condition&.dig("status"))
           ]
 
-          if show_url
+          # Get URL if needed (for display or for connected apps search)
+          url = nil
+          if show_url || show_connected_apps
             url = @nctl.get_service_connection_string(type, name, project: namespace)
-            row << presence(url)
+          end
+
+          row << presence(url) if show_url
+
+          if show_connected_apps
+            connected = find_connected_apps(apps_by_project[namespace] || [], url)
+            row << (connected.empty? ? "-" : connected.join(", "))
           end
 
           row
@@ -69,10 +84,62 @@ module Deploio
 
         headers = %w[SERVICE PROJECT TYPE READY]
         headers << "URL" if show_url
+        headers << "CONNECTED APPS" if show_connected_apps
         Output.table(rows, headers: headers)
       end
 
       private
+
+      def validate_project_required_options!
+        options_requiring_project = []
+        options_requiring_project << "--url" if merged_options[:url]
+        options_requiring_project << "--connected-apps" if merged_options[:connected_apps]
+
+        return if options_requiring_project.empty? || merged_options[:project]
+
+        Output.error("The #{options_requiring_project.join(" and ")} option(s) require --project to be specified")
+        Output.info("Fetching this data for all services is too slow. Please filter by project first.")
+        Output.info("Example: deploio services -p myproject #{options_requiring_project.first}")
+        exit 1
+      end
+
+      def find_connected_apps(apps, service_url)
+        return [] if service_url.nil? || service_url.empty?
+
+        apps.filter_map do |app|
+          app_name = app.dig("metadata", "name")
+          env_vars = app.dig("spec", "forProvider", "config", "env") || []
+
+          # Check if any env var value contains the service URL (or a recognizable part of it)
+          connected = env_vars.any? do |env|
+            value = env["value"].to_s
+            next false if value.empty?
+
+            # Match the service URL or its host part
+            value.include?(service_url) || url_host_matches?(value, service_url)
+          end
+
+          app_name if connected
+        end
+      end
+
+      def url_host_matches?(env_value, service_url)
+        # Extract host from service URL and check if it appears in the env value
+        # This handles cases where the env var might have a slightly different URL format
+        service_host = extract_host(service_url)
+        return false if service_host.nil?
+
+        env_value.include?(service_host)
+      end
+
+      def extract_host(url)
+        # Extract host from URLs like:
+        # postgres://user:pass@host.example.com/db
+        # rediss://:token@host.example.com:6379
+        # mysql://user:pass@host.example.com:3306/db
+        match = url.match(%r{://[^/]*@([^/:]+)})
+        match&.[](1)
+      end
 
       def resolve_project(project)
         current_org = @nctl.current_org
