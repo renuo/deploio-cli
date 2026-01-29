@@ -71,6 +71,7 @@ AUTHENTICATION
 
 APPS
   deploio apps                    List all apps
+  deploio apps -p PROJECT         List apps in a specific project
   deploio apps:info -a APP        Show app details
 
 PROJECTS
