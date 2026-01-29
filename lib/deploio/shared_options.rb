@@ -38,5 +38,20 @@ module Deploio
       Output.error(e.message)
       exit 1
     end
+
+    # Resolves a project name to its fully qualified form (org-project).
+    # Users can type short names like "myproject" and this will prepend the org.
+    # @param project [String] Project name (short or fully qualified)
+    # @return [String] Fully qualified project name
+    def resolve_project(project)
+      current_org = @nctl.current_org
+      return project unless current_org
+
+      # Special case: project equals org name (default project)
+      return project if project == current_org
+
+      # Always prepend org to get fully qualified name
+      "#{current_org}-#{project}"
+    end
   end
 end

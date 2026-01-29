@@ -11,10 +11,13 @@ module Deploio
 
       default_task :list
 
-      desc "list", "List all apps"
+      desc "list", "List apps (all or filtered by project)"
+      method_option :project, aliases: "-p", type: :string,
+        desc: "Filter by project name"
       def list
         setup_options
-        raw_apps = @nctl.get_all_apps
+        project = merged_options[:project] ? resolve_project(merged_options[:project]) : nil
+        raw_apps = project ? @nctl.get_apps_by_project(project) : @nctl.get_all_apps
 
         if options[:json]
           puts JSON.pretty_generate(raw_apps)
@@ -22,7 +25,8 @@ module Deploio
         end
 
         if raw_apps.empty?
-          Output.warning("No apps found") unless merged_options[:dry_run]
+          msg = project ? "No apps found in project #{merged_options[:project]}" : "No apps found"
+          Output.warning(msg) unless merged_options[:dry_run]
           return
         end
 

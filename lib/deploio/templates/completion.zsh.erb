@@ -54,10 +54,17 @@ _<%= program_name %>_projects_list() {
   local -a projects
   projects=(${(f)"$(<%= program_name %> projects --json 2>/dev/null | ruby -rjson -e '
     data = JSON.parse(STDIN.read) rescue []
+    orgs_json = `<%= program_name %> orgs --json 2>/dev/null` rescue "[]"
+    orgs = JSON.parse(orgs_json) rescue []
+    current_org = orgs.find { |o| o["current"] }&.fetch("name", nil)
+
     data.each do |p|
       name = p.dig("metadata", "name") || ""
-      ns = p.dig("metadata", "namespace") || ""
-      puts "#{name}:#{name} (#{ns})"
+      display_name = p.dig("spec", "displayName").to_s
+      # Strip org prefix from project name for short name
+      short_name = current_org && name.start_with?("#{current_org}-") ? name.delete_prefix("#{current_org}-") : name
+      label = display_name.length > 0 ? display_name : short_name
+      puts "#{short_name}:#{label}"
     end
   ' 2>/dev/null)"})
 
@@ -93,7 +100,7 @@ _<%= program_name %>_apps_list() {
   fi
 }
 
-<% subcommands.each do |name, commands, class_options| %>
+<% subcommands.each do |name, commands, class_options, default_task| %>
 # <%= name %> subcommand
 _<%= program_name %>_<%= name %>() {
   local -a <%= name %>_commands
@@ -103,6 +110,20 @@ _<%= program_name %>_<%= name %>() {
 <% end -%>
   )
 
+<% default_cmd = commands.find { |cmd_name, _, _| cmd_name == default_task } -%>
+<% if default_cmd -%>
+  # Handle options directly (for default task) or subcommand
+  # Check if current word or next word after subcommand starts with -
+  local first_arg="${words[2]}"
+  local current_word="${words[CURRENT]}"
+  if [[ "$first_arg" == -* ]] || [[ "$current_word" == -* ]] || [[ -z "$first_arg" && "$current_word" == -* ]]; then
+    # Options provided directly - use default task (<%= default_task %>)
+    _arguments -s \
+<%= format_options(default_cmd[2], class_options, positional_arg(name, default_task)) %>
+    return
+  fi
+
+<% end -%>
   _arguments -s \
     '1:<%= name %> command:-><%= name %>_cmd' \
     '*::<%= name %> args:-><%= name %>_args'

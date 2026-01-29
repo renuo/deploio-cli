@@ -51,8 +51,8 @@ module Deploio
     def default_option_completers
       {
         "app" => "app:_#{program_name}_apps_list",
-        "size" => "size:(micro mini standard)"
-        "project" => "project:_#{program_name}_projects_list",
+        "size" => "size:(micro mini standard)",
+        "project" => "project:_#{program_name}_projects_list"
       }
     end
 
@@ -72,7 +72,8 @@ module Deploio
         commands = klass.commands.except("help").map do |cmd_name, cmd|
           [cmd_name, cmd.description, cmd.options]
         end
-        [name, commands, klass.class_options]
+        default_task = klass.default_command if klass.respond_to?(:default_command)
+        [name, commands, klass.class_options, default_task]
       end
     end
 

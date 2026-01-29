@@ -55,6 +55,16 @@ module Deploio
       {}
     end
 
+    def get_apps_by_project(project)
+      output = capture("get", "apps", "--project", project, "-o", "json")
+      return [] if output.nil? || output.empty?
+
+      data = JSON.parse(output)
+      data.is_a?(Array) ? data : (data["items"] || [])
+    rescue JSON::ParserError
+      []
+    end
+
     def get_all_builds
       output = capture("get", "builds", "-A", "-o", "json")
       return [] if output.nil? || output.empty?

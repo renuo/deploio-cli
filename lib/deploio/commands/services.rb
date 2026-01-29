@@ -141,19 +141,6 @@ module Deploio
         match&.[](1)
       end
 
-      def resolve_project(project)
-        current_org = @nctl.current_org
-        # Don't prepend org if:
-        # - No org context
-        # - Project already contains a hyphen (already qualified)
-        # - Project equals the org name (special case for default project)
-        if current_org && !project.include?("-") && project != current_org
-          "#{current_org}-#{project}"
-        else
-          project
-        end
-      end
-
       def presence(value, default: "-")
         return default if value.nil? || value.to_s.empty?
 
