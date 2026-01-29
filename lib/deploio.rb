@@ -8,6 +8,7 @@ require_relative "deploio/output"
 require_relative "deploio/app_ref"
 require_relative "deploio/nctl_client"
 require_relative "deploio/app_resolver"
+require_relative "deploio/price_fetcher"
 require_relative "deploio/shared_options"
 require_relative "deploio/cli"
 

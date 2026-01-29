@@ -86,6 +86,7 @@ SERVICES
   deploio services -p PROJECT                 List services in a specific project
   deploio services -p PROJECT --url List services with connection URLs (requires -p)
   deploio services -p PROJECT --connected-apps  Show which apps use each service (requires -p)
+  deploio services --chf                    Show estimated monthly price (CHF) for each service
 
 LOGS
   deploio logs -a APP             Show recent logs

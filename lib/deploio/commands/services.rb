@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../price_fetcher"
+
 module Deploio
   module Commands
     class Services < Thor
@@ -18,6 +20,8 @@ module Deploio
         desc: "Show connection URL for each service (requires --project)"
       method_option :connected_apps, aliases: "-c", type: :boolean, default: false,
         desc: "Show apps connected to each service (requires --project)"
+      method_option :chf, type: :boolean, default: false,
+        desc: "Show estimated price (CHF) for each service"
       def list
         setup_options
 
@@ -39,6 +43,7 @@ module Deploio
 
         show_url = merged_options[:url]
         show_connected_apps = merged_options[:connected_apps]
+        show_price = merged_options[:chf]
         current_org = @nctl.current_org
 
         # Pre-fetch apps and their env vars if we need to show connected apps
@@ -49,9 +54,13 @@ module Deploio
           end
         end
 
+        # Initialize price fetcher if needed
+        price_fetcher = PriceFetcher.new if show_price
+
         rows = all_services.map do |service|
           metadata = service["metadata"] || {}
           status = service["status"] || {}
+          spec = service["spec"] || {}
           conditions = status["conditions"] || []
           ready_condition = conditions.find { |c| c["type"] == "Ready" }
 
@@ -65,6 +74,11 @@ module Deploio
             type,
             presence(ready_condition&.dig("status"))
           ]
+
+          if show_price
+            price = price_fetcher.price_for_service(type, spec)
+            row << price_fetcher.format_price(price)
+          end
 
           # Get URL if needed (for display or for connected apps search)
           url = nil
@@ -83,6 +97,7 @@ module Deploio
         end
 
         headers = %w[SERVICE PROJECT TYPE READY]
+        headers << "PRICE" if show_price
         headers << "URL" if show_url
         headers << "CONNECTED APPS" if show_connected_apps
         Output.table(rows, headers: headers)
