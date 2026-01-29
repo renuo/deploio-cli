@@ -3,6 +3,7 @@
 require "thor"
 require_relative "commands/auth"
 require_relative "commands/apps"
+require_relative "commands/builds"
 require_relative "commands/orgs"
 require_relative "completion_generator"
 
@@ -39,6 +40,9 @@ module Deploio
     subcommand "apps", Commands::Apps
     desc "orgs COMMAND", "Organization management commands"
     subcommand "orgs", Commands::Orgs
+
+    desc "builds COMMAND", "Build management commands"
+    subcommand "builds", Commands::Builds
 
     # Shortcut for auth:login
     desc "login", "Authenticate with nctl (alias for auth:login)"

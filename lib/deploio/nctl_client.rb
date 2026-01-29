@@ -61,6 +61,34 @@ module Deploio
         "-o", "stats")
     end
 
+    def get_all_builds
+      output = capture("get", "builds", "-A", "-o", "json")
+      return [] if output.nil? || output.empty?
+
+      data = JSON.parse(output)
+      builds = data.is_a?(Array) ? data : (data["items"] || [])
+      # Sort by creation timestamp descending (newest first)
+      builds.sort_by { |b| b.dig("metadata", "creationTimestamp") || "" }.reverse
+    rescue JSON::ParserError
+      []
+    end
+
+    # @param app_ref [Deploio::AppRef]
+    def get_builds(app_ref)
+      output = capture("get", "builds",
+        "--project", app_ref.project_name,
+        "-a", app_ref.app_name,
+        "-o", "json")
+      return [] if output.nil? || output.empty?
+
+      data = JSON.parse(output)
+      builds = data.is_a?(Array) ? data : (data["items"] || [])
+      # Sort by creation timestamp descending (newest first)
+      builds.sort_by { |b| b.dig("metadata", "creationTimestamp") || "" }.reverse
+    rescue JSON::ParserError
+      []
+    end
+
     def edit_app(app_ref)
       exec_passthrough("edit", "app", app_ref.app_name,
         "--project", app_ref.project_name)

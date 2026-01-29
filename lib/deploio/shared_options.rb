@@ -30,6 +30,7 @@ module Deploio
       @nctl.check_requirements unless merged_options[:dry_run]
     end
 
+    # @return [Deploio::AppRef]
     def resolve_app
       resolver = AppResolver.new(nctl_client: @nctl)
       resolver.resolve(app_name: merged_options[:app])
