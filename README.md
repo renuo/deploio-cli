@@ -73,6 +73,9 @@ APPS
   deploio apps                    List all apps
   deploio apps:info -a APP        Show app details
 
+PROJECTS
+  deploio projects                List all projects
+
 BUILDS
   deploio builds                  List all builds
   deploio builds -a APP           List builds for a specific app

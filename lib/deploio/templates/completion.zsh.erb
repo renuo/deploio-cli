@@ -23,6 +23,25 @@ _<%= program_name %>_orgs_list() {
   fi
 }
 
+# Dynamic completion for projects
+_<%= program_name %>_projects_list() {
+  local -a projects
+  projects=(${(f)"$(<%= program_name %> projects --json 2>/dev/null | ruby -rjson -e '
+    data = JSON.parse(STDIN.read) rescue []
+    data.each do |p|
+      name = p.dig("metadata", "name") || ""
+      ns = p.dig("metadata", "namespace") || ""
+      puts "#{name}:#{name} (#{ns})"
+    end
+  ' 2>/dev/null)"})
+
+  if [[ ${#projects[@]} -gt 0 ]]; then
+    _describe -t projects 'available projects' projects
+  else
+    _message 'project name'
+  fi
+}
+
 # Dynamic completion for apps
 _<%= program_name %>_apps_list() {
   local -a apps

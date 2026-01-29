@@ -116,9 +116,40 @@ module Deploio
       return [] if output.nil? || output.empty?
 
       data = JSON.parse(output)
-      data.is_a?(Array) ? data : (data["items"] || [])
+      projects = data.is_a?(Array) ? data : (data["items"] || [])
+
+      display_names = get_project_display_names
+      projects.each do |project|
+        name = project.dig("metadata", "name")
+        if display_names[name]
+          project["spec"] ||= {}
+          project["spec"]["displayName"] = display_names[name]
+        end
+      end
+
+      projects
     rescue JSON::ParserError
       []
+    end
+
+    # Enrich with display names from table output (since JSON excludes spec.displayName)
+    # TODO: https://github.com/ninech/nctl/pull/339
+    def get_project_display_names
+      output = capture("get", "projects")
+      return {} if output.nil? || output.empty?
+
+      display_names = {}
+      output.each_line.drop(1).each do |line| # Skip header
+        parts = line.strip.split(" ").map(&:strip)
+        next if parts.length < 2
+
+        project_name = parts[0]
+        display_name = parts[1]
+        display_names[project_name] = display_name unless display_name == "<none>"
+      end
+      display_names
+    rescue Deploio::NctlError
+      {}
     end
 
     def get_orgs
