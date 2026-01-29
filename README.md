@@ -79,6 +79,12 @@ PROJECTS
 BUILDS
   deploio builds                  List all builds
   deploio builds -a APP           List builds for a specific app
+
+SERVICES
+  deploio services                            List all services
+  deploio services -p PROJECT                 List services in a specific project
+  deploio services -p PROJECT --url List services with connection URLs (requires -p)
+
 LOGS
   deploio logs -a APP             Show recent logs
   deploio logs -a APP --tail      Stream logs continuously

@@ -23,6 +23,32 @@ _<%= program_name %>_orgs_list() {
   fi
 }
 
+# Dynamic completion for services
+_<%= program_name %>_services_list() {
+  local -a services
+  services=(${(f)"$(<%= program_name %> services --json 2>/dev/null | ruby -rjson -e '
+    data = JSON.parse(STDIN.read) rescue []
+    orgs_json = `<%= program_name %> orgs --json 2>/dev/null` rescue "[]"
+    orgs = JSON.parse(orgs_json) rescue []
+    current_org = orgs.find { |o| o["current"] }&.fetch("name", nil)
+
+    data.each do |s|
+      ns = s.dig("metadata", "namespace") || ""
+      name = s.dig("metadata", "name") || ""
+      type = s["_type"] || "unknown"
+      project = current_org && ns.start_with?("#{current_org}-") ? ns.delete_prefix("#{current_org}-") : ns
+      short_name = "#{project}-#{name}"
+      puts "#{short_name}:#{name} (#{type})"
+    end
+  ' 2>/dev/null)"})
+
+  if [[ ${#services[@]} -gt 0 ]]; then
+    _describe -t services 'available services' services
+  else
+    _message 'service (format: project-servicename)'
+  fi
+}
+
 # Dynamic completion for projects
 _<%= program_name %>_projects_list() {
   local -a projects

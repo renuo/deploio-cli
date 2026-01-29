@@ -55,12 +55,6 @@ module Deploio
       {}
     end
 
-    def get_app_stats(app_ref)
-      capture("get", "app", app_ref.app_name,
-        "--project", app_ref.project_name,
-        "-o", "stats")
-    end
-
     def get_all_builds
       output = capture("get", "builds", "-A", "-o", "json")
       return [] if output.nil? || output.empty?
@@ -89,26 +83,61 @@ module Deploio
       []
     end
 
-    def edit_app(app_ref)
-      exec_passthrough("edit", "app", app_ref.app_name,
-        "--project", app_ref.project_name)
+    def get_all_services(project: nil)
+      service_types = %w[keyvaluestore postgres mysql opensearch]
+      all_services = []
+
+      service_types.each do |type|
+        services = get_services_by_type(type, project: project)
+        services.each { |s| s["_type"] = type }
+        all_services.concat(services)
+      end
+
+      all_services
     end
 
-    def create_app(project, app_name, git_url:, git_revision:, size: "mini")
-      run("create", "app", app_name,
-        "--project", project,
-        "--git-url", git_url,
-        "--git-revision", git_revision,
-        "--size", size)
+    def get_services_by_type(type, project: nil)
+      args = ["get", type]
+      if project
+        args += ["--project", project]
+      else
+        args << "-A"
+      end
+      args += ["-o", "json"]
+
+      output = capture(*args)
+      return [] if output.nil? || output.empty?
+
+      data = JSON.parse(output)
+      data.is_a?(Array) ? data : (data["items"] || [])
+    rescue JSON::ParserError
+      []
+    rescue Deploio::NctlError
+      []
     end
 
-    def delete_app(app_ref)
-      run("delete", "app", app_ref.app_name,
-        "--project", app_ref.project_name)
+    def get_service(type, name, project:)
+      output = capture("get", type, name, "--project", project, "-o", "json")
+      return nil if output.nil? || output.empty?
+
+      JSON.parse(output)
+    rescue JSON::ParserError
+      nil
+    rescue Deploio::NctlError
+      nil
     end
 
-    def create_project(project_name)
-      run("create", "project", project_name)
+    def get_service_connection_string(type, name, project:)
+      case type
+      when "postgres", "mysql"
+        capture("get", type, name, "--project", project, "--print-connection-string").strip
+      when "keyvaluestore"
+        build_keyvaluestore_connection_string(name, project)
+      when "opensearch"
+        build_opensearch_connection_string(name, project)
+      end
+    rescue Deploio::NctlError
+      nil
     end
 
     def get_projects
@@ -268,6 +297,32 @@ module Deploio
 
       raise Deploio::NctlError,
         "nctl version #{version} is too old. Need #{REQUIRED_VERSION}+. Run: brew upgrade nctl"
+    end
+
+    def build_keyvaluestore_connection_string(name, project)
+      data = get_service("keyvaluestore", name, project: project)
+      return nil unless data
+
+      at_provider = data.dig("status", "atProvider") || {}
+      fqdn = at_provider["fqdn"]
+      return nil if fqdn.nil? || fqdn.empty?
+
+      token = capture("get", "keyvaluestore", name, "--project", project, "--print-token").strip
+      "rediss://:#{token}@#{fqdn}:6379"
+    end
+
+    def build_opensearch_connection_string(name, project)
+      data = get_service("opensearch", name, project: project)
+      return nil unless data
+
+      at_provider = data.dig("status", "atProvider") || {}
+      hosts = at_provider["hosts"] || []
+      return nil if hosts.empty?
+
+      user = capture("get", "opensearch", name, "--project", project, "--print-user").strip
+      password = capture("get", "opensearch", name, "--project", project, "--print-password").strip
+      host = hosts.first
+      "https://#{user}:#{password}@#{host}"
     end
   end
 end

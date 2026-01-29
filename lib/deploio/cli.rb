@@ -6,6 +6,7 @@ require_relative "commands/apps"
 require_relative "commands/builds"
 require_relative "commands/orgs"
 require_relative "commands/projects"
+require_relative "commands/services"
 require_relative "completion_generator"
 
 module Deploio
@@ -44,6 +45,9 @@ module Deploio
 
     desc "projects COMMAND", "Project management commands"
     subcommand "projects", Commands::Projects
+
+    desc "services COMMAND", "Service management commands"
+    subcommand "services", Commands::Services
 
     desc "builds COMMAND", "Build management commands"
     subcommand "builds", Commands::Builds
