@@ -51,8 +51,8 @@ module Deploio
     def default_option_completers
       {
         "app" => "app:_#{program_name}_apps_list",
-        "size" => "size:(micro mini standard)"
-        "project" => "project:_#{program_name}_projects_list",
+        "size" => "size:(micro mini standard)",
+        "project" => "project:_#{program_name}_projects_list"
       }
     end
 

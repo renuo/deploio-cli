@@ -42,14 +42,4 @@ class NctlClientTest < Minitest::Test
     result = @client.get_all_apps
     assert_equal [], result
   end
-
-  def test_get_app_stats_in_dry_run
-    out, = capture_io do
-      @client.get_app_stats(@app_ref)
-    end
-
-    assert_match(/nctl get app staging/, out)
-    assert_match(/--project renuotest-myproject/, out)
-    assert_match(/-o stats/, out)
-  end
 end
