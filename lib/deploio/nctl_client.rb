@@ -55,6 +55,22 @@ module Deploio
       {}
     end
 
+    def get_all_pg_databases
+      output_dedicated_dbs = capture("get", "postgres", "-A", "-o", "json")
+      output_shared_dbs = capture("get", "postgresdatabase", "-A", "-o", "json")
+      if (output_dedicated_dbs.nil? || output_dedicated_dbs.empty?) &&
+          (output_shared_dbs.nil? || output_shared_dbs.empty?)
+        return []
+      end
+
+      [
+        *JSON.parse(output_dedicated_dbs),
+        *JSON.parse(output_shared_dbs)
+      ]
+    rescue JSON::ParserError
+      []
+    end
+
     def get_all_builds
       output = capture("get", "builds", "-A", "-o", "json")
       return [] if output.nil? || output.empty?
