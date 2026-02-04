@@ -110,6 +110,9 @@ module Deploio
         exit 1
       end
 
+      desc "backups COMMAND", "Manage PostgreSQL database backups"
+      subcommand "backups", Commands::PostgreSQLBackups
+
       private
 
       def presence(value, default: "-")
