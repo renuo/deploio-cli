@@ -7,6 +7,7 @@ require_relative "commands/builds"
 require_relative "commands/orgs"
 require_relative "commands/projects"
 require_relative "commands/services"
+require_relative "commands/postgresql_backups"
 require_relative "commands/postgresql"
 require_relative "completion_generator"
 
