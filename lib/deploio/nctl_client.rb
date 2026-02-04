@@ -55,6 +55,42 @@ module Deploio
       {}
     end
 
+    def get_all_pg_databases
+      output_dedicated_dbs = capture("get", "postgres", "-A", "-o", "json")
+      output_shared_dbs = capture("get", "postgresdatabase", "-A", "-o", "json")
+      if (output_dedicated_dbs.nil? || output_dedicated_dbs.empty?) &&
+          (output_shared_dbs.nil? || output_shared_dbs.empty?)
+        return []
+      end
+
+      [
+        *JSON.parse(output_dedicated_dbs),
+        *JSON.parse(output_shared_dbs)
+      ]
+    rescue JSON::ParserError
+      []
+    end
+
+    def get_pg_database(db_ref)
+      output = begin
+        capture("get", "postgres", db_ref.database_name,
+          "--project", db_ref.project_name, "-o", "json")
+      rescue Deploio::NctlError
+        nil
+      end
+
+      if output.nil? || output.empty?
+        output = capture("get", "postgresdatabase", db_ref.database_name,
+          "--project", db_ref.project_name, "-o", "json")
+      end
+
+      return nil if output.nil? || output.empty?
+
+      JSON.parse(output)
+    rescue JSON::ParserError
+      nil
+    end
+
     def get_all_builds
       output = capture("get", "builds", "-A", "-o", "json")
       return [] if output.nil? || output.empty?
@@ -266,6 +302,7 @@ module Deploio
         Output.command(cmd.join(" "))
         ""
       else
+        puts "> #{cmd.join(" ")}" if ENV["DEPLOIO_DEBUG"]
         stdout, stderr, status = Open3.capture3(*cmd)
         unless status.success?
           raise Deploio::NctlError, "nctl command failed: #{stderr}"

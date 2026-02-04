@@ -93,7 +93,37 @@ _<%= program_name %>_apps_list() {
   fi
 }
 
-<% subcommands.each do |name, commands, class_options| %>
+# Dynamic completion for PostgreSQL databases
+_<%= program_name %>_pg_databases_list() {
+  local -a databases
+  databases=(${(f)"$(<%= program_name %> pg list --json 2>/dev/null | ruby -rjson -e '
+    data = JSON.parse(STDIN.read) rescue []
+    orgs_json = `<%= program_name %> orgs --json 2>/dev/null` rescue "[]"
+    orgs = JSON.parse(orgs_json) rescue []
+    current_org = orgs.find { |o| o["current"] }&.fetch("name", nil)
+
+    data.each do |db|
+      metadata = db["metadata"] || {}
+      spec = db["spec"] || {}
+      for_provider = spec["forProvider"] || {}
+      ns = metadata["namespace"] || ""
+      name = metadata["name"] || ""
+      version = for_provider["version"] || "?"
+      kind = db["kind"] || ""
+      project = current_org && ns.start_with?("#{current_org}-") ? ns.delete_prefix("#{current_org}-") : ns
+      short_name = "#{project}-#{name}"
+      puts "#{short_name}:#{name} (#{kind}, v#{version})"
+    end
+  ' 2>/dev/null)"})
+
+  if [[ ${#databases[@]} -gt 0 ]]; then
+    _describe -t databases 'available PostgreSQL databases' databases
+  else
+    _message 'database (format: project-dbname)'
+  fi
+}
+
+<% subcommands.each do |name, commands, class_options, klass| %>
 # <%= name %> subcommand
 _<%= program_name %>_<%= name %>() {
   local -a <%= name %>_commands
@@ -115,8 +145,45 @@ _<%= program_name %>_<%= name %>() {
       case "$words[1]" in
 <% commands.each do |cmd_name, _, options| -%>
         <%= cmd_name %>)
+<% if klass.subcommand_classes.key?(cmd_name) -%>
+          _<%= program_name %>_<%= name %>_<%= cmd_name %>
+<% else -%>
           _arguments -s \
 <%= format_options(options, class_options, positional_arg(name, cmd_name)) %>
+<% end -%>
+          ;;
+<% end -%>
+      esac
+      ;;
+  esac
+}
+<% end %>
+
+<% nested_subcommands.each do |full_name, commands, class_options| %>
+<% parent_name, nested_name = full_name.split(':') %>
+# <%= full_name %> nested subcommand
+_<%= program_name %>_<%= parent_name %>_<%= nested_name %>() {
+  local -a <%= nested_name %>_commands
+  <%= nested_name %>_commands=(
+<% commands.each do |cmd_name, desc| -%>
+    '<%= cmd_name %>:<%= escape(desc) %>'
+<% end -%>
+  )
+
+  _arguments -s \
+    '1:<%= nested_name %> command:-><%= nested_name %>_cmd' \
+    '*::<%= nested_name %> args:-><%= nested_name %>_args'
+
+  case "$state" in
+    <%= nested_name %>_cmd)
+      _describe -t commands '<%= nested_name %> commands' <%= nested_name %>_commands
+      ;;
+    <%= nested_name %>_args)
+      case "$words[1]" in
+<% commands.each do |cmd_name, _, options| -%>
+        <%= cmd_name %>)
+          _arguments -s \
+<%= format_options(options, class_options, positional_arg(full_name, cmd_name)) %>
           ;;
 <% end -%>
       esac
