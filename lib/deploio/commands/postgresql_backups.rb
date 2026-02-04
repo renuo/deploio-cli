@@ -52,7 +52,6 @@ module Deploio
           Output.error("No databases found in PostgreSQL instance; cannot download backup.")
           exit 1
         elsif databases.size > 1 && options[:db_name].nil?
-          p databases
           Output.error("Multiple databases found in PostgreSQL instance")
           Output.error("Databases: #{databases.join(", ")}")
           Output.error("Please specify the database name using the --db_name option.")
