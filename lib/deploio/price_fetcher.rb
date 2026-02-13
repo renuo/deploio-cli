@@ -27,11 +27,36 @@ module Deploio
       case type
       when "postgres", "mysql"
         price_for_database(type, spec)
+      when "postgresdatabases", "mysqldatabases"
+        price_for_single_database
       when "keyvaluestore"
         price_for_keyvaluestore(spec)
       when "opensearch"
         price_for_opensearch
+      when "bucket"
+        price_for_bucket
       end
+    end
+
+    def price_for_app(app_data)
+      fetch
+      return nil unless @prices
+
+      spec = app_data["spec"] || app_data
+      status = app_data["status"] || {}
+      for_provider = spec["forProvider"] || {}
+      at_provider = status["atProvider"] || {}
+      config = for_provider["config"] || {}
+
+      size = (config["size"] || "micro").downcase
+      # Use status replicas (actual running) if available, otherwise spec replicas, default to 1
+      replicas = at_provider["replicas"] || for_provider["replicas"] || 1
+      replicas = replicas.to_i
+
+      size_price = @prices.dig("app", size)
+      return nil if size_price.nil?
+
+      size_price * replicas
     end
 
     def format_price(price)
@@ -81,12 +106,16 @@ module Deploio
         "mysql" => {},
         "keyvaluestore" => { "base" => 15 },
         "opensearch" => { "base" => 60 },
+        "single_database" => { "base" => 5 },
+        "bucket" => { "base" => 0 },
+        "app" => { "micro" => 8, "mini" => 16, "standard-1" => 32, "standard-2" => 58 },
         "ram_per_gib" => 5
       }
 
       products.each do |product|
         name = product["name"]
         list_price = product["list_price"]
+        categ_path = (product["categ_path"] || []).join("/")
 
         case name
         when /^PostgreSQL - (nine-(?:db|single-db)-\S+)/
@@ -99,6 +128,9 @@ module Deploio
           prices["keyvaluestore"]["base"] = list_price
         when "Managed Service: OpenSearch (Elasticsearch compatible)"
           prices["opensearch"]["base"] = list_price
+        when "Micro", "Mini", "Standard-1", "Standard-2"
+          # Only use deplo.io app sizes
+          prices["app"][name.downcase] = list_price if categ_path.include?("deplo")
         end
       end
 
@@ -141,6 +173,16 @@ module Deploio
 
     def price_for_opensearch
       @prices.dig("opensearch", "base") || 60
+    end
+
+    def price_for_single_database
+      # Single databases on shared instances - base price for smallest tier
+      @prices.dig("single_database", "base") || 5
+    end
+
+    def price_for_bucket
+      # Buckets are usage-based, show base/minimum price
+      @prices.dig("bucket", "base") || 0
     end
 
     def parse_memory_to_gib(memory_str)

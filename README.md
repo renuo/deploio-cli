@@ -72,10 +72,12 @@ AUTHENTICATION
 APPS
   deploio apps                    List all apps
   deploio apps -p PROJECT         List apps in a specific project
+  deploio apps --chf              Show estimated monthly price (CHF) for each app
   deploio apps:info -a APP        Show app details
 
 PROJECTS
   deploio projects                List all projects
+  deploio projects --chf          Show estimated total price (CHF) for each project
 
 BUILDS
   deploio builds                  List all builds
@@ -126,10 +128,57 @@ deploio auth:whoami
 # List all apps
 deploio apps
 
+# List apps in a specific project
+deploio apps -p myproject
+
+# List apps with estimated monthly prices (CHF)
+deploio apps --chf
+
 # Show app info
 deploio apps:info -a myproject-staging
+```
+
+### Working with projects
+
+```bash
+# List all projects
+deploio projects
+
+# List projects with estimated total prices (apps + services)
+deploio projects --chf
+
+# Output as JSON
+deploio projects --json
+```
 
 ```
+
+### Working with services
+
+```bash
+# List all services
+deploio services
+
+# List services in a specific project
+deploio services -p myproject
+
+# List services with estimated monthly prices (CHF)
+deploio services --chf
+
+# List services with connection URLs (requires --project)
+deploio services -p myproject --url
+
+# Show which apps are connected to each service (requires --project)
+deploio services -p myproject --connected-apps
+
+# Combine options
+deploio services -p myproject --url --connected-apps --chf
+
+# Output as JSON
+deploio services --json
+```
+
+Note: Prices (--chf) are fetched from the Nine calculator API and cached locally in `~/.deploio/prices.json` for 24 hours.
 
 ### Logs and execution
 

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../price_fetcher"
+
 module Deploio
   module Commands
     class Apps < Thor
@@ -14,6 +16,8 @@ module Deploio
       desc "list", "List apps (all or filtered by project)"
       method_option :project, aliases: "-p", type: :string,
         desc: "Filter by project name"
+      method_option :chf, type: :boolean, default: false,
+        desc: "Show estimated price (CHF) for each app"
       def list
         setup_options
         project = merged_options[:project] ? resolve_project(merged_options[:project]) : nil
@@ -31,6 +35,8 @@ module Deploio
         end
 
         resolver = AppResolver.new(nctl_client: @nctl)
+        show_price = merged_options[:chf]
+        price_fetcher = PriceFetcher.new if show_price
 
         rows = raw_apps.map do |app|
           metadata = app["metadata"] || {}
@@ -41,15 +47,24 @@ module Deploio
           namespace = metadata["namespace"] || ""
           name = metadata["name"] || ""
 
-          [
+          row = [
             resolver.short_name_for(namespace, name),
             project_from_namespace(namespace, resolver.current_org),
             presence(config["size"], default: "micro"),
             presence(git["revision"])
           ]
+
+          if show_price
+            price = price_fetcher.price_for_app(app)
+            row << price_fetcher.format_price(price)
+          end
+
+          row
         end
 
-        Output.table(rows, headers: %w[APP PROJECT SIZE REVISION])
+        headers = %w[APP PROJECT SIZE REVISION]
+        headers << "PRICE" if show_price
+        Output.table(rows, headers: headers)
       end
 
       desc "info", "Show app details"
@@ -97,10 +112,13 @@ module Deploio
         ready_condition = conditions.find { |c| c["type"] == "Ready" }
         synced_condition = conditions.find { |c| c["type"] == "Synced" }
 
+        default_url = at_provider["defaultURL"]
+        default_url_display = default_url ? Output.link(default_url) : "-"
+
         Output.table([
           ["Ready", presence(ready_condition&.dig("status"))],
           ["Synced", presence(synced_condition&.dig("status"))],
-          ["Default URL", presence(at_provider["defaultURL"])],
+          ["Default URL", default_url_display],
           ["Latest Build", presence(at_provider["latestBuild"])],
           ["Latest Release", presence(at_provider["latestRelease"])]
         ])
@@ -110,7 +128,7 @@ module Deploio
         hosts = for_provider["hosts"] || []
         if hosts.any?
           Output.header("Hosts")
-          Output.table(hosts.map { |h| [presence(h)] })
+          Output.list(hosts.map { |h| Output.link(h, "https://#{h}") })
           puts
         end
 

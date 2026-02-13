@@ -23,6 +23,7 @@ class PriceFetcherTest < Minitest::Test
       },
       "keyvaluestore" => {"base" => 15},
       "opensearch" => {"base" => 60},
+      "app" => {"micro" => 8, "mini" => 16, "standard-1" => 32, "standard-2" => 58},
       "ram_per_gib" => 5
     }
   end
@@ -106,5 +107,68 @@ class PriceFetcherTest < Minitest::Test
 
     spec = {"forProvider" => {"machineType" => "unknown-type"}}
     assert_nil @price_fetcher.price_for_service("postgres", spec)
+  end
+
+  def test_price_for_app_micro
+    @price_fetcher.instance_variable_set(:@prices, @sample_prices)
+
+    app = {"spec" => {"forProvider" => {"config" => {"size" => "micro"}}}}
+    assert_equal 8, @price_fetcher.price_for_app(app)
+  end
+
+  def test_price_for_app_mini
+    @price_fetcher.instance_variable_set(:@prices, @sample_prices)
+
+    app = {"spec" => {"forProvider" => {"config" => {"size" => "mini"}}}}
+    assert_equal 16, @price_fetcher.price_for_app(app)
+  end
+
+  def test_price_for_app_standard_1
+    @price_fetcher.instance_variable_set(:@prices, @sample_prices)
+
+    app = {"spec" => {"forProvider" => {"config" => {"size" => "standard-1"}}}}
+    assert_equal 32, @price_fetcher.price_for_app(app)
+  end
+
+  def test_price_for_app_with_spec_replicas
+    @price_fetcher.instance_variable_set(:@prices, @sample_prices)
+
+    app = {"spec" => {"forProvider" => {"config" => {"size" => "mini"}, "replicas" => 3}}}
+    assert_equal 48, @price_fetcher.price_for_app(app) # 16 * 3
+  end
+
+  def test_price_for_app_with_status_replicas
+    @price_fetcher.instance_variable_set(:@prices, @sample_prices)
+
+    # Status replicas takes precedence over spec replicas
+    app = {
+      "spec" => {"forProvider" => {"config" => {"size" => "mini"}, "replicas" => 3}},
+      "status" => {"atProvider" => {"replicas" => 2}}
+    }
+    assert_equal 32, @price_fetcher.price_for_app(app) # 16 * 2 (uses status)
+  end
+
+  def test_price_for_app_with_zero_replicas
+    @price_fetcher.instance_variable_set(:@prices, @sample_prices)
+
+    app = {
+      "spec" => {"forProvider" => {"config" => {"size" => "mini"}}},
+      "status" => {"atProvider" => {"replicas" => 0}}
+    }
+    assert_equal 0, @price_fetcher.price_for_app(app)
+  end
+
+  def test_price_for_app_defaults_to_micro
+    @price_fetcher.instance_variable_set(:@prices, @sample_prices)
+
+    app = {"spec" => {"forProvider" => {"config" => {}}}}
+    assert_equal 8, @price_fetcher.price_for_app(app)
+  end
+
+  def test_price_for_app_with_empty_data
+    @price_fetcher.instance_variable_set(:@prices, @sample_prices)
+
+    app = {}
+    assert_equal 8, @price_fetcher.price_for_app(app) # defaults to micro * 1
   end
 end
