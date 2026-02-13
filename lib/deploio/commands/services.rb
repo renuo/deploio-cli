@@ -57,7 +57,9 @@ module Deploio
         # Initialize price fetcher if needed
         price_fetcher = PriceFetcher.new if show_price
 
-        rows = all_services.map do |service|
+        # Build rows and group by project
+        grouped_rows = {}
+        all_services.each do |service|
           metadata = service["metadata"] || {}
           status = service["status"] || {}
           spec = service["spec"] || {}
@@ -67,10 +69,11 @@ module Deploio
           namespace = metadata["namespace"] || ""
           name = metadata["name"] || ""
           type = service["_type"] || "-"
+          project_name = project_from_namespace(namespace, current_org)
 
           row = [
             short_service_name(namespace, name, current_org),
-            project_from_namespace(namespace, current_org),
+            project_name,
             type,
             presence(ready_condition&.dig("status"))
           ]
@@ -93,14 +96,18 @@ module Deploio
             row << (connected.empty? ? "-" : connected.join(", "))
           end
 
-          row
+          grouped_rows[project_name] ||= []
+          grouped_rows[project_name] << row
         end
+
+        # Sort groups by project name
+        sorted_groups = grouped_rows.sort.to_h
 
         headers = %w[SERVICE PROJECT TYPE READY]
         headers << "PRICE" if show_price
         headers << "URL" if show_url
         headers << "CONNECTED APPS" if show_connected_apps
-        Output.table(rows, headers: headers)
+        Output.grouped_table(sorted_groups, headers: headers)
       end
 
       private

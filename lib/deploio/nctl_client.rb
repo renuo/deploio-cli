@@ -94,7 +94,7 @@ module Deploio
     end
 
     def get_all_services(project: nil)
-      service_types = %w[keyvaluestore postgres mysql opensearch]
+      service_types = %w[keyvaluestore postgres postgresdatabases mysql mysqldatabases opensearch bucket]
       all_services = []
 
       service_types.each do |type|
@@ -139,12 +139,14 @@ module Deploio
 
     def get_service_connection_string(type, name, project:)
       case type
-      when "postgres", "mysql"
+      when "postgres", "mysql", "postgresdatabases", "mysqldatabases"
         capture("get", type, name, "--project", project, "--print-connection-string").strip
       when "keyvaluestore"
         build_keyvaluestore_connection_string(name, project)
       when "opensearch"
         build_opensearch_connection_string(name, project)
+      when "bucket"
+        build_bucket_url(name, project)
       end
     rescue Deploio::NctlError
       nil
@@ -333,6 +335,13 @@ module Deploio
       password = capture("get", "opensearch", name, "--project", project, "--print-password").strip
       host = hosts.first
       "https://#{user}:#{password}@#{host}"
+    end
+
+    def build_bucket_url(name, project)
+      data = get_service("bucket", name, project: project)
+      return nil unless data
+
+      data.dig("status", "atProvider", "publicURL")
     end
   end
 end
