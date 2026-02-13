@@ -93,6 +93,23 @@ module Deploio
     end
     map "run" => :exec
 
+    # TUI Dashboard
+    desc "tui", "Launch interactive TUI dashboard"
+    def tui
+      require_relative "tui/tty_dashboard"
+      TUI::TTYDashboard.new.run
+    end
+
+    desc "rtui", "Launch TUI dashboard (ratatui-ruby)"
+    def rtui
+      require "ratatui_ruby"
+      require_relative "tui/ratatui_dashboard"
+      TUI::RatatuiDashboard.new.run
+    rescue LoadError
+      Output.error("ratatui_ruby gem not installed. Run: gem install ratatui_ruby")
+      exit 1
+    end
+
     private
 
     def build_option_args
