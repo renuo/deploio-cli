@@ -11,8 +11,6 @@ module Deploio
 
       class_option :json, type: :boolean, default: false, desc: "Output as JSON"
 
-      default_task :list
-
       desc "list", "List builds (all or for a specific app)"
       def list
         setup_options
@@ -22,6 +20,15 @@ module Deploio
         else
           list_all
         end
+      end
+
+      desc "logs [BUILD_NAME]", "Show build logs"
+      method_option :tail, aliases: "-t", type: :boolean, default: false, desc: "Stream logs continuously"
+      method_option :lines, aliases: "-n", type: :numeric, default: 5000, desc: "Number of lines to show"
+      def logs(build_name = nil)
+        setup_options
+        app_ref = merged_options[:app] ? resolve_app : nil
+        @nctl.build_logs(build_name, app_ref: app_ref, tail: options[:tail], lines: options[:lines])
       end
 
       private

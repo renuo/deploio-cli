@@ -26,6 +26,15 @@ module Deploio
         *args)
     end
 
+    def build_logs(build_name, app_ref: nil, tail: false, lines: 5000)
+      args = ["--lines=#{lines}"]
+      args << "-f" if tail
+      if app_ref
+        args += ["--project", app_ref.project_name, "-a", app_ref.app_name]
+      end
+      exec_passthrough("logs", "build", *([build_name].compact), *args)
+    end
+
     def exec_command(app_ref, command)
       exec_passthrough("exec", "app", app_ref.app_name,
         "--project", app_ref.project_name,
