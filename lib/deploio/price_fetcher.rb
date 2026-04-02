@@ -85,7 +85,7 @@ module Deploio
 
       cache_prices(prices)
       prices
-    rescue StandardError
+    rescue
       nil
     end
 
@@ -104,11 +104,11 @@ module Deploio
       prices = {
         "postgres" => {},
         "mysql" => {},
-        "keyvaluestore" => { "base" => 15 },
-        "opensearch" => { "base" => 60 },
-        "single_database" => { "base" => 5 },
-        "bucket" => { "base" => 0 },
-        "app" => { "micro" => 8, "mini" => 16, "standard-1" => 32, "standard-2" => 58 },
+        "keyvaluestore" => {"base" => 15},
+        "opensearch" => {"base" => 60},
+        "single_database" => {"base" => 5},
+        "bucket" => {"base" => 0},
+        "app" => {"micro" => 8, "mini" => 16, "standard-1" => 32, "standard-2" => 58},
         "ram_per_gib" => 5
       }
 

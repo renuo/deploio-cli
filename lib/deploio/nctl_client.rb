@@ -32,7 +32,7 @@ module Deploio
       if app_ref
         args += ["--project", app_ref.project_name, "-a", app_ref.app_name]
       end
-      exec_passthrough("logs", "build", *([build_name].compact), *args)
+      exec_passthrough("logs", "build", *[build_name].compact, *args)
     end
 
     def exec_command(app_ref, command)
@@ -109,7 +109,6 @@ module Deploio
     rescue JSON::ParserError
       []
     end
-
 
     def get_all_builds
       output = capture("get", "builds", "-A", "-o", "json")
