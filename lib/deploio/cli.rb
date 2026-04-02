@@ -7,6 +7,8 @@ require_relative "commands/builds"
 require_relative "commands/orgs"
 require_relative "commands/projects"
 require_relative "commands/services"
+require_relative "commands/postgresql_backups"
+require_relative "commands/postgresql"
 require_relative "completion_generator"
 
 module Deploio
@@ -51,6 +53,9 @@ module Deploio
 
     desc "builds COMMAND", "Build management commands"
     subcommand "builds", Commands::Builds
+
+    desc "pg COMMAND", "PostgreSQL database management commands"
+    subcommand "pg", Commands::PostgreSQL
 
     # Shortcut for auth:login
     desc "login", "Authenticate with nctl (alias for auth:login)"

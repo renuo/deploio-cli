@@ -58,7 +58,10 @@ module Deploio
 
     def default_positional_completers
       {
-        "orgs:set" => "'1:organization:_#{program_name}_orgs_list'"
+        "orgs:set" => "'1:organization:_#{program_name}_orgs_list'",
+        "pg:info" => "'1:database:_#{program_name}_pg_databases_list'",
+        "pg:backups:capture" => "'1:database:_#{program_name}_pg_databases_list'",
+        "pg:backups:download" => "'1:database:_#{program_name}_pg_databases_list'"
       }
     end
 
@@ -73,8 +76,21 @@ module Deploio
           [cmd_name, cmd.description, cmd.options]
         end
         default_task = klass.default_command if klass.respond_to?(:default_command)
-        [name, commands, klass.class_options, default_task]
+        [name, commands, klass.class_options, default_task, klass]
       end
+    end
+
+    def nested_subcommands
+      result = []
+      cli_class.subcommand_classes.each do |parent_name, parent_klass|
+        parent_klass.subcommand_classes.each do |nested_name, nested_klass|
+          commands = nested_klass.commands.except("help").map do |cmd_name, cmd|
+            [cmd_name, cmd.description, cmd.options]
+          end
+          result << ["#{parent_name}:#{nested_name}", commands, nested_klass.class_options]
+        end
+      end
+      result
     end
 
     def main_commands

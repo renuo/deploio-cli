@@ -107,7 +107,7 @@ module Deploio
             price = price_fetcher.price_for_app(app) || 0
             project_total += price
 
-            size_info = replicas.to_i > 1 ? "#{size} ×#{replicas}" : size
+            size_info = (replicas.to_i > 1) ? "#{size} ×#{replicas}" : size
             rows << [project_label, app_name, "app", size_info, format_price(price)]
           end
 
@@ -155,7 +155,7 @@ module Deploio
       end
 
       def format_price(price)
-        price > 0 ? "CHF #{price}/mo" : "-"
+        (price > 0) ? "CHF #{price}/mo" : "-"
       end
 
       private
