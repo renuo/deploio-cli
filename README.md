@@ -18,7 +18,7 @@ bundle install
 bundle exec bin/deploio --help
 ```
 
-### As a gem (coming soon)
+### As a gem
 
 ```bash
 gem install deploio-cli
