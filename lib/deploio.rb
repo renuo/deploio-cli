@@ -11,8 +11,8 @@ require_relative "deploio/nctl_client"
 require_relative "deploio/rclone_client"
 require_relative "deploio/app_resolver"
 require_relative "deploio/pg_database_resolver"
-require_relative "deploio/postgres_backups"
-require_relative "deploio/postgres_database_backups"
+require_relative "deploio/postgres_backup_service"
+require_relative "deploio/postgres_database_backup_service"
 require_relative "deploio/price_fetcher"
 require_relative "deploio/shared_options"
 require_relative "deploio/cli"
@@ -23,4 +23,5 @@ module Deploio
   class PgDatabaseNotFoundError < Error; end
   class NctlError < Error; end
   class RcloneError < Error; end
+  class UnsupportedBackupOperationError < Error; end
 end

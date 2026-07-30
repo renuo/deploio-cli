@@ -5,16 +5,31 @@ module Deploio
   # lives on a shared server we have no access to.
   # The naming is confusing, but this is how Nine names them and how the resources appear, so prefer to stay
   # consistent with that
-  class PostgresDatabaseBackups
+  class PostgresDatabaseBackupService
     DEFAULT_EXTENSION = ".sql.zst"
 
     BACKUP_SCHEDULE_LABEL = "DatabaseBackupSchedule"
 
-    def initialize(db_ref:, data:, nctl_client:, rclone_client_factory: nil)
+    def initialize(db_ref:, data:, nctl_client:, name: nil, rclone_client_factory: nil)
       @db_ref = db_ref
       @data = data || {}
       @nctl = nctl_client
+      @name = name || db_ref.full_name
       @rclone_client_factory = rclone_client_factory || method(:build_rclone_client)
+    end
+
+    def default_destination
+      "./#{@name}-latest-backup#{DEFAULT_EXTENSION}"
+    end
+
+    # Nine takes these backups on a schedule
+    # (you can even see them using `kubectl get databasebackupschedules.storage.nine.ch -n renuo-chess-tracker -o json`)
+    # => there is no way to trigger one.
+    def capture
+      raise Deploio::UnsupportedBackupOperationError,
+        "'#{@db_ref.full_name}' is an economy-tier database. Those are backed up automatically " \
+        "on their configured schedule and cannot be captured manually.\n" \
+        "Use 'deploio pg backups list #{@name}' to see the available backups."
     end
 
     def backups
@@ -25,12 +40,8 @@ module Deploio
       end
     end
 
-    def latest
-      backups.first
-    end
-
-    def download(destination:)
-      backup = latest
+    def download(destination:, db_name: nil)
+      backup = backups.first
       unless backup
         raise Deploio::Error, "No backups found for '#{@db_ref.full_name}' in bucket '#{bucket_name}'."
       end
@@ -55,9 +66,9 @@ module Deploio
       bucket.dig("metadata", "name")
     end
 
-    # The PostgresDatabase resource holds no reference to its backup bucket and
-    # nctl exposes no databasebackupschedule resource, so we match from the
-    # bucket side: the schedule-owned bucket named after this database.
+    # The PostgresDatabase resource holds no reference to its backup bucket
+    # Changes with service connections (I assume), but we're not there yet as we still have projects with the old setup.
+    # Therefore, we match by name
     def bucket
       @bucket ||= begin
         candidates = @nctl.get_services_by_type("bucket", project: @db_ref.project_name).select do |bucket|

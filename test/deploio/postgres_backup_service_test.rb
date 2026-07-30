@@ -2,7 +2,7 @@
 
 require "test_helper"
 
-class PostgresBackupsTest < Minitest::Test
+class PostgresBackupServiceTest < Minitest::Test
   def data(databases: {"maindb" => {}}, fqdn: "db.example.com")
     {
       "kind" => "Postgres",
@@ -10,18 +10,26 @@ class PostgresBackupsTest < Minitest::Test
     }
   end
 
-  def backups(**kwargs)
-    Deploio::PostgresBackups.new(data: data(**kwargs), dry_run: true)
+  def service(**kwargs)
+    Deploio::PostgresBackupService.new(data: data(**kwargs), name: "myproject-maindb", dry_run: true)
+  end
+
+  def test_listing_backups_is_unsupported
+    assert_raises(Deploio::UnsupportedBackupOperationError) { service.backups }
+  end
+
+  def test_default_destination_is_named_after_the_database
+    assert_equal "./myproject-maindb-latest-backup.zst", service.default_destination
   end
 
   def test_capture_runs_the_nine_backup_script_over_ssh
-    out, = capture_io { backups.capture }
+    out, = capture_io { service.capture }
 
     assert_match(/ssh dbadmin@db\.example\.com sudo nine-postgresql-backup/, out)
   end
 
   def test_download_rsyncs_the_latest_backup
-    out, = capture_io { backups.download(destination: "./out.zst") }
+    out, = capture_io { service.download(destination: "./out.zst") }
 
     assert_match(
       %r{rsync -avz dbadmin@db\.example\.com:~/backup/postgresql/latest/customer/maindb/maindb\.zst \./out\.zst},
@@ -30,14 +38,14 @@ class PostgresBackupsTest < Minitest::Test
   end
 
   def test_download_uses_the_only_database_when_db_name_is_omitted
-    out, = capture_io { backups(databases: {"solo" => {}}).download(destination: "./out.zst") }
+    out, = capture_io { service(databases: {"solo" => {}}).download(destination: "./out.zst") }
 
     assert_match(%r{customer/solo/solo\.zst}, out)
   end
 
   def test_download_uses_the_requested_database_when_there_are_several
     out, = capture_io do
-      backups(databases: {"one" => {}, "two" => {}}).download(destination: "./out.zst", db_name: "two")
+      service(databases: {"one" => {}, "two" => {}}).download(destination: "./out.zst", db_name: "two")
     end
 
     assert_match(%r{customer/two/two\.zst}, out)
@@ -45,7 +53,7 @@ class PostgresBackupsTest < Minitest::Test
 
   def test_download_raises_when_several_databases_and_none_requested
     error = assert_raises(Deploio::Error) do
-      backups(databases: {"one" => {}, "two" => {}}).download(destination: "./out.zst")
+      service(databases: {"one" => {}, "two" => {}}).download(destination: "./out.zst")
     end
 
     assert_match(/Multiple databases found/, error.message)
@@ -54,14 +62,14 @@ class PostgresBackupsTest < Minitest::Test
 
   def test_download_raises_when_the_instance_has_no_databases
     error = assert_raises(Deploio::Error) do
-      backups(databases: {"" => {}}).download(destination: "./out.zst")
+      service(databases: {"" => {}}).download(destination: "./out.zst")
     end
 
     assert_match(/No databases found/, error.message)
   end
 
   def test_raises_when_the_fqdn_is_missing
-    error = assert_raises(Deploio::Error) { backups(fqdn: "").capture }
+    error = assert_raises(Deploio::Error) { service(fqdn: "").capture }
 
     assert_match(/FQDN not found/, error.message)
   end

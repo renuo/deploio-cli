@@ -90,22 +90,24 @@ class CLIPostgreSQLTest < Minitest::Test
     assert_match(%r{maindb\.zst /tmp/mine\.zst}, out)
   end
 
+  # What the tier classes refuse is their own business (and tested there); the
+  # CLI's job is to report the refusal and exit non-zero instead of crashing.
   def test_pg_backups_capture_is_rejected_for_an_economy_database
     mock_client = MockNctlClient.new(pg_databases: [ECONOMY_DB], current_org: "myorg")
 
-    _out, err = run_backups_command(["capture", "myproject-shareddb"], mock_client, expect_exit: true)
+    out, err = run_backups_command(["capture", "myproject-shareddb"], mock_client, expect_exit: true)
 
-    assert_match(/economy-tier database/, err)
-    assert_match(/backups list myproject-shareddb/, err)
+    assert_empty out, "nothing should have been attempted"
+    refute_empty err, "the reason should be reported on stderr"
   end
 
   def test_pg_backups_list_is_rejected_for_a_dedicated_instance
     mock_client = MockNctlClient.new(pg_databases: [DEDICATED_DB], current_org: "myorg")
 
-    _out, err = run_backups_command(["list", "myproject-maindb"], mock_client, expect_exit: true)
+    out, err = run_backups_command(["list", "myproject-maindb"], mock_client, expect_exit: true)
 
-    assert_match(/dedicated PostgreSQL instances/, err)
-    assert_match(/backups download myproject-maindb/, err)
+    assert_empty out, "nothing should have been attempted"
+    refute_empty err, "the reason should be reported on stderr"
   end
 
   class MockNctlClient

@@ -2,7 +2,7 @@
 
 require "test_helper"
 
-class PostgresDatabaseBackupsTest < Minitest::Test
+class PostgresDatabaseBackupServiceTest < Minitest::Test
   PROJECT = "renuo-chess-tracker"
   INSTANCE_NAME = "1c62958_53f1258"
 
@@ -45,19 +45,33 @@ class PostgresDatabaseBackupsTest < Minitest::Test
     }
   end
 
-  def build(buckets:, objects: [], database_name: "main", data: database_data)
+  def build_service(buckets:, objects: [], database_name: "main", data: database_data)
     rclone = FakeRcloneClient.new(objects)
-    backups = Deploio::PostgresDatabaseBackups.new(
+    service = Deploio::PostgresDatabaseBackupService.new(
       db_ref: db_ref(database_name),
       data: data,
       nctl_client: MockNctlClient.new(buckets: buckets),
+      name: "chess-tracker-#{database_name}",
       rclone_client_factory: -> { rclone }
     )
-    [backups, rclone]
+    [service, rclone]
+  end
+
+  def test_capturing_a_backup_is_unsupported
+    service, rclone = build_service(buckets: [])
+
+    assert_raises(Deploio::UnsupportedBackupOperationError) { service.capture }
+    assert_empty rclone.listed
+  end
+
+  def test_default_destination_is_named_after_the_database
+    service, = build_service(buckets: [])
+
+    assert_equal "./chess-tracker-main-latest-backup.sql.zst", service.default_destination
   end
 
   def test_finds_the_backup_bucket_named_after_the_database
-    backups, rclone = build(
+    service, rclone = build_service(
       buckets: [
         plain_bucket("chess-tracker-main"),
         backup_bucket("postgresdatabase-main-cffe5c3")
@@ -65,46 +79,46 @@ class PostgresDatabaseBackupsTest < Minitest::Test
       objects: [object("PostgresDatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst", "2026-07-30T02:24:22Z")]
     )
 
-    assert_equal 1, backups.backups.size
+    assert_equal 1, service.backups.size
     assert_equal ["postgresdatabase-main-cffe5c3"], rclone.listed
   end
 
   def test_ignores_buckets_not_owned_by_a_backup_schedule
-    backups, = build(buckets: [plain_bucket("postgresdatabase-main-cffe5c3")])
+    service, = build_service(buckets: [plain_bucket("postgresdatabase-main-cffe5c3")])
 
-    error = assert_raises(Deploio::Error) { backups.backups }
+    error = assert_raises(Deploio::Error) { service.backups }
     assert_match(/No backup bucket found/, error.message)
   end
 
   def test_does_not_match_the_bucket_of_a_similarly_named_database
     # Database "labels" must not pick up the bucket belonging to "labels-main".
-    backups, = build(
+    service, = build_service(
       buckets: [backup_bucket("postgresdatabase-labels-main-be40f63")],
       database_name: "labels"
     )
 
-    assert_raises(Deploio::Error) { backups.backups }
+    assert_raises(Deploio::Error) { service.backups }
   end
 
   def test_matches_a_database_whose_name_contains_a_hyphen
-    backups, rclone = build(
+    service, rclone = build_service(
       buckets: [backup_bucket("postgresdatabase-labels-main-be40f63")],
       database_name: "labels-main"
     )
 
-    assert_empty backups.backups
+    assert_empty service.backups
     assert_equal ["postgresdatabase-labels-main-be40f63"], rclone.listed
   end
 
   def test_raises_when_no_bucket_exists_for_the_project
-    backups, = build(buckets: [])
+    service, = build_service(buckets: [])
 
-    error = assert_raises(Deploio::Error) { backups.backups }
+    error = assert_raises(Deploio::Error) { service.backups }
     assert_match(/backupSchedule/, error.message)
   end
 
   def test_keeps_only_objects_belonging_to_this_database
-    backups, = build(
+    service, = build_service(
       buckets: [backup_bucket("postgresdatabase-main-cffe5c3")],
       objects: [
         object("PostgresDatabase-#{INSTANCE_NAME}-2026-07-29-0224.sql.zst", "2026-07-29T02:24:45Z"),
@@ -113,12 +127,11 @@ class PostgresDatabaseBackupsTest < Minitest::Test
       ]
     )
 
-    assert_equal ["PostgresDatabase-#{INSTANCE_NAME}-2026-07-29-0224.sql.zst"],
-      backups.backups.map { |b| b["Name"] }
+    assert_equal ["PostgresDatabase-#{INSTANCE_NAME}-2026-07-29-0224.sql.zst"], service.backups.map { |b| b["Name"] }
   end
 
   def test_orders_backups_newest_first
-    backups, = build(
+    service, = build_service(
       buckets: [backup_bucket("postgresdatabase-main-cffe5c3")],
       objects: [
         object("PostgresDatabase-#{INSTANCE_NAME}-2026-07-28-0227.sql.zst", "2026-07-28T02:27:37Z"),
@@ -127,13 +140,18 @@ class PostgresDatabaseBackupsTest < Minitest::Test
       ]
     )
 
-    assert_equal %w[2026-07-30T02:24:22Z 2026-07-29T02:24:45Z 2026-07-28T02:27:37Z],
-      backups.backups.map { |b| b["ModTime"] }
-    assert_equal "PostgresDatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst", backups.latest["Name"]
+    assert_equal(
+      %w[
+        2026-07-30T02:24:22Z
+        2026-07-29T02:24:45Z
+        2026-07-28T02:27:37Z
+      ],
+      service.backups.map { |b| b["ModTime"] }
+    )
   end
 
   def test_download_fetches_the_latest_backup
-    backups, rclone = build(
+    service, rclone = build_service(
       buckets: [backup_bucket("postgresdatabase-main-cffe5c3")],
       objects: [
         object("PostgresDatabase-#{INSTANCE_NAME}-2026-07-29-0224.sql.zst", "2026-07-29T02:24:45Z"),
@@ -141,7 +159,7 @@ class PostgresDatabaseBackupsTest < Minitest::Test
       ]
     )
 
-    backup = backups.download(destination: "./out.sql.zst")
+    backup = service.download(destination: "./out.sql.zst")
 
     assert_equal "PostgresDatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst", backup["Name"]
     assert_equal [[
@@ -152,9 +170,9 @@ class PostgresDatabaseBackupsTest < Minitest::Test
   end
 
   def test_download_raises_when_the_bucket_holds_no_backups
-    backups, rclone = build(buckets: [backup_bucket("postgresdatabase-main-cffe5c3")])
+    service, rclone = build_service(buckets: [backup_bucket("postgresdatabase-main-cffe5c3")])
 
-    error = assert_raises(Deploio::Error) { backups.download(destination: "./out.sql.zst") }
+    error = assert_raises(Deploio::Error) { service.download(destination: "./out.sql.zst") }
     assert_match(/No backups found/, error.message)
     assert_empty rclone.downloaded
   end

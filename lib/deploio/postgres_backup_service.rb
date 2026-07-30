@@ -5,12 +5,23 @@ module Deploio
   # database server and reach it over SSH
   # The naming is confusing, but this is how Nine names them and how the resources appear, so prefer to stay
   # consistent with that
-  class PostgresBackups
+  class PostgresBackupService
     DEFAULT_EXTENSION = ".zst"
 
-    def initialize(data:, dry_run: false)
+    # @param name [String] the name the user typed, used for hints in messages
+    def initialize(data:, name: nil, dry_run: false)
       @data = data || {}
+      @name = name
       @dry_run = dry_run
+    end
+
+    def default_destination = "./#{@name}-latest-backup#{DEFAULT_EXTENSION}"
+
+    def backups
+      raise Deploio::UnsupportedBackupOperationError,
+        "Listing backups is not yet supported for dedicated PostgreSQL instances; only the latest " \
+        "backup is kept on the server. Feel free to implement it!\n" \
+        "Use 'deploio pg backups download #{@name}' to fetch it."
     end
 
     def capture
@@ -25,6 +36,8 @@ module Deploio
       cmd = ["rsync", "-avz", "dbadmin@#{fqdn}:~/backup/postgresql/latest/customer/#{name}/#{name}.zst", destination]
       Output.command(cmd.join(" "))
       system(*cmd) unless @dry_run
+
+      nil
     end
 
     private
