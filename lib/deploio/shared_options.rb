@@ -20,8 +20,32 @@ module Deploio
     def merged_options
       @merged_options ||= options
         .to_h
-        .merge(parent_options.to_h) { |_key, sub, par| par.nil? ? sub : par }
+        .merge(parent_options.to_h) { |_key, sub, par| merge_option_value(sub, par) }
         .transform_keys(&:to_sym)
+    end
+
+    # Boolean flags default to false rather than nil, so a parent that simply
+    # didn't get the flag is indistinguishable from one that had it disabled.
+    # Treating them as "set anywhere wins" keeps flags like --dry-run working
+    # when they are passed to a nested subcommand (e.g. `pg backups download`).
+    def merge_option_value(sub, parent)
+      return sub if parent.nil?
+      return sub || parent if [true, false].include?(sub) || [true, false].include?(parent)
+
+      parent
+    end
+
+    # Rebuilds the shared class options as CLI arguments so they survive being
+    # handed to another Thor class. Thor's generated subcommand dispatch passes
+    # the parent's option *values* along, which drops flags once subcommands are
+    # nested two levels deep (e.g. `deploio pg backups download`).
+    def forwarded_option_args
+      args = []
+      args << "--dry-run" if merged_options[:dry_run]
+      args << "--no-color" if merged_options[:no_color]
+      args << "--app" << merged_options[:app] if merged_options[:app]
+      args << "--org" << merged_options[:org] if merged_options[:org]
+      args
     end
 
     def setup_options

@@ -100,13 +100,6 @@ module Deploio
 
     private
 
-    def build_option_args
-      args = []
-      args << "--dry-run" if options[:dry_run]
-      args << "--no-color" if options[:no_color]
-      args << "--app" << options[:app] if options[:app]
-      args << "--org" << options[:org] if options[:org]
-      args
-    end
+    alias_method :build_option_args, :forwarded_option_args
   end
 end
