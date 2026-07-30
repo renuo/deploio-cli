@@ -104,7 +104,8 @@ class CLIPostgreSQLTest < Minitest::Test
 
     _out, err = run_backups_command(["list", "myproject-maindb"], mock_client, expect_exit: true)
 
-    assert_match(/not supported for dedicated PostgreSQL instances/, err)
+    assert_match(/dedicated PostgreSQL instances/, err)
+    assert_match(/backups download myproject-maindb/, err)
   end
 
   class MockNctlClient

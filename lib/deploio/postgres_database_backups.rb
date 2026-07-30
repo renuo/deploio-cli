@@ -3,7 +3,7 @@
 module Deploio
   # Backups for the economy tier (kind: PostgresDatabase), where the database
   # lives on a shared server we have no access to.
-  # The nameing is confusing, but this is how Nine names them and how the resources appear, so prefer to stay
+  # The naming is confusing, but this is how Nine names them and how the resources appear, so prefer to stay
   # consistent with that
   class PostgresDatabaseBackups
     DEFAULT_EXTENSION = ".sql.zst"

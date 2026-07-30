@@ -3,7 +3,7 @@
 module Deploio
   # Backups for the dedicated tier (kind: Postgres), where we own the whole
   # database server and reach it over SSH
-  # The nameing is confusing, but this is how Nine names them and how the resources appear, so prefer to stay
+  # The naming is confusing, but this is how Nine names them and how the resources appear, so prefer to stay
   # consistent with that
   class PostgresBackups
     DEFAULT_EXTENSION = ".zst"
