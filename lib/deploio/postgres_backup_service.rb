@@ -19,8 +19,7 @@ module Deploio
 
     def backups
       raise Deploio::UnsupportedBackupOperationError,
-        "Listing backups is not yet supported for dedicated PostgreSQL instances; only the latest " \
-        "backup is kept on the server. Feel free to implement it!\n" \
+        "Listing backups is not yet supported for dedicated PostgreSQL instances; Feel free to implement it!\n" \
         "Use 'deploio pg backups download #{@name}' to fetch it."
     end
 
