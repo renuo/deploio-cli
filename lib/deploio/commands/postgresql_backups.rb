@@ -46,6 +46,8 @@ module Deploio
         # Only the economy tier knows when its backup was taken.
         if backup
           Output.success("Downloaded backup from #{format_time(backup["ModTime"])} to #{destination}")
+        else
+          Output.success("Downloaded backup to #{destination}")
         end
       rescue Deploio::Error => e
         Output.error(e.message)
@@ -54,9 +56,6 @@ module Deploio
 
       private
 
-      # Resolves the database and returns the backup service for its tier. Each
-      # service raises UnsupportedBackupOperationError for the operations its
-      # tier lacks.
       def backup_service_for(name)
         setup_options
         resolver = PgDatabaseResolver.new(nctl_client: @nctl)

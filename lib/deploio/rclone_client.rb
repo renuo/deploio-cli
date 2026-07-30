@@ -4,14 +4,7 @@ require "json"
 require "open3"
 
 module Deploio
-  # Read-only S3 access via rclone, used to fetch economy-tier (PostgresDatabase)
-  # backups from the bucket Nine writes them to.
-  #
-  # Only `lsjson` and `copyto <remote> <local>` are ever issued. No mutating
-  # rclone verb belongs in this class.
   class RcloneClient
-    # rclone reads remote config from RCLONE_CONFIG_<REMOTE>_<KEY> env vars, which
-    # keeps credentials out of argv (visible to any process via `ps`).
     REMOTE = "DEPLOIO"
 
     attr_reader :dry_run
@@ -27,7 +20,6 @@ module Deploio
       check_rclone_installed
     end
 
-    # @return [Array<Hash>] entries with "Name", "Size" and "ModTime" keys
     def list(bucket)
       output = capture("lsjson", remote_path(bucket))
       return [] if output.nil? || output.empty?
@@ -46,6 +38,7 @@ module Deploio
 
     # --s3-no-check-bucket skips the HeadBucket call, which the read-only bucket
     # user is not permitted to make.
+    # See also https://docs.nine.ch/docs/object-storage/object-storage-client-tools#rclone
     def build_command(args)
       ["rclone", *args.map(&:to_s), "--s3-no-check-bucket"]
     end
@@ -64,7 +57,6 @@ module Deploio
       }
     end
 
-    # Runs rclone and captures stdout. Used for lsjson. Raises on failure.
     def capture(*args)
       cmd = build_command(args)
       if dry_run
@@ -81,7 +73,6 @@ module Deploio
       stdout
     end
 
-    # Runs rclone with output to terminal so transfer progress streams live.
     def run(*args)
       cmd = build_command(args)
       Output.command(cmd.join(" "))
