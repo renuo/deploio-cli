@@ -77,7 +77,7 @@ class CLIPostgreSQLTest < Minitest::Test
     out, = run_backups_command(["download", "myproject-maindb"], mock_client)
 
     assert_match(
-      %r{rsync -avz dbadmin@db\.example\.com:~/backup/postgresql/latest/customer/maindb/maindb\.zst \./myproject-maindb-latest-backup\.zst},
+      %r{rsync -av dbadmin@db\.example\.com:~/backup/postgresql/latest/customer/maindb/maindb\.zst \./myproject-maindb-latest-backup\.zst},
       out
     )
   end

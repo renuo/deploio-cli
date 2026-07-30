@@ -33,7 +33,7 @@ module Deploio
     def download(destination:, db_name: nil)
       name = resolve_db_name(db_name)
 
-      cmd = ["rsync", "-avz", "dbadmin@#{fqdn}:~/backup/postgresql/latest/customer/#{name}/#{name}.zst", destination]
+      cmd = ["rsync", "-av", "dbadmin@#{fqdn}:~/backup/postgresql/latest/customer/#{name}/#{name}.zst", destination]
       Output.command(cmd.join(" "))
       system(*cmd) unless @dry_run
 

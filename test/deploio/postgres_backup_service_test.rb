@@ -32,7 +32,7 @@ class PostgresBackupServiceTest < Minitest::Test
     out, = capture_io { service.download(destination: "./out.zst") }
 
     assert_match(
-      %r{rsync -avz dbadmin@db\.example\.com:~/backup/postgresql/latest/customer/maindb/maindb\.zst \./out\.zst},
+      %r{rsync -av dbadmin@db\.example\.com:~/backup/postgresql/latest/customer/maindb/maindb\.zst \./out\.zst},
       out
     )
   end
