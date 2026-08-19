@@ -61,6 +61,7 @@ module Deploio
         "orgs:set" => "'1:organization:_#{program_name}_orgs_list'",
         "pg:info" => "'1:database:_#{program_name}_pg_databases_list'",
         "pg:backups:capture" => "'1:database:_#{program_name}_pg_databases_list'",
+        "pg:backups:list" => "'1:database:_#{program_name}_pg_databases_list'",
         "pg:backups:download" => "'1:database:_#{program_name}_pg_databases_list'"
       }
     end

@@ -197,6 +197,14 @@ module Deploio
       nil
     end
 
+    def get_bucket_user_access_key(name, project:)
+      capture("get", "bucketuser", name, "--project", project, "--print-access-key").strip
+    end
+
+    def get_bucket_user_secret_key(name, project:)
+      capture("get", "bucketuser", name, "--project", project, "--print-secret-key").strip
+    end
+
     def get_projects
       output = capture("get", "projects", "-o", "json")
       return [] if output.nil? || output.empty?

@@ -33,61 +33,100 @@ class CLIPostgreSQLTest < Minitest::Test
     assert_match(/Database not found/, err)
   end
 
-  def test_pg_backups_capture_in_dry_run
-    # Mock the scenario where we have a database available
-    mock_client = MockNctlClient.new(
-      pg_databases: [{
-        "kind" => "Postgres",
-        "metadata" => {"namespace" => "myorg-myproject", "name" => "maindb"},
-        "spec" => {"forProvider" => {"version" => "15"}},
-        "status" => {"atProvider" => {"fqdn" => "db.example.com"}}
-      }],
-      current_org: "myorg"
-    )
+  DEDICATED_DB = {
+    "kind" => "Postgres",
+    "metadata" => {"namespace" => "myorg-myproject", "name" => "maindb"},
+    "spec" => {"forProvider" => {"version" => "15"}},
+    "status" => {
+      "atProvider" => {"fqdn" => "db.example.com", "databases" => {"maindb" => {}}}
+    }
+  }.freeze
 
-    out, = capture_io do
-      resolver = Deploio::PgDatabaseResolver.new(nctl_client: mock_client)
-      _db_ref = resolver.resolve(database_name: "myproject-maindb")
+  ECONOMY_DB = {
+    "kind" => "PostgresDatabase",
+    "metadata" => {"namespace" => "myorg-myproject", "name" => "shareddb"},
+    "spec" => {"forProvider" => {"version" => "17"}},
+    "status" => {"atProvider" => {"name" => "1c62958_53f1258"}}
+  }.freeze
 
-      # Simulate the capture command
-      fqdn = "db.example.com"
-      cmd = ["ssh", "dbadmin@#{fqdn}", "sudo nine-postgresql-backup"]
-      puts "> #{cmd.join(" ")}"
+  # setup_options builds its own NctlClient, so swap the constructor out to run
+  # the real command against a mock.
+  def run_backups_command(args, mock_client, expect_exit: false)
+    capture_io do
+      Deploio::NctlClient.stub(:new, mock_client) do
+        if expect_exit
+          assert_raises(SystemExit) { Deploio::Commands::PostgreSQLBackups.start(args) }
+        else
+          Deploio::Commands::PostgreSQLBackups.start(args)
+        end
+      end
     end
-
-    assert_match(/ssh dbadmin@db.example.com sudo nine-postgresql-backup/, out)
   end
 
-  def test_pg_backups_download_in_dry_run
-    # Mock the scenario where we have a database available
-    mock_client = MockNctlClient.new(
-      pg_databases: [{
-        "kind" => "Postgres",
-        "metadata" => {"namespace" => "myorg-myproject", "name" => "maindb"},
-        "spec" => {"forProvider" => {"version" => "15"}},
-        "status" => {
-          "atProvider" => {
-            "fqdn" => "db.example.com",
-            "databases" => {"maindb" => {}}
-          }
-        }
-      }],
-      current_org: "myorg"
+  def test_pg_backups_capture_runs_the_backup_script_for_a_dedicated_instance
+    mock_client = MockNctlClient.new(pg_databases: [DEDICATED_DB], current_org: "myorg")
+
+    out, = run_backups_command(["capture", "myproject-maindb"], mock_client)
+
+    assert_match(/ssh dbadmin@db\.example\.com sudo nine-postgresql-backup/, out)
+  end
+
+  def test_pg_backups_download_rsyncs_from_a_dedicated_instance
+    mock_client = MockNctlClient.new(pg_databases: [DEDICATED_DB], current_org: "myorg")
+
+    out, = run_backups_command(["download", "myproject-maindb"], mock_client)
+
+    assert_match(
+      %r{rsync -av dbadmin@db\.example\.com:~/backup/postgresql/latest/customer/maindb/maindb\.zst \./myproject-maindb-latest-backup\.zst},
+      out
     )
+  end
 
-    out, = capture_io do
-      resolver = Deploio::PgDatabaseResolver.new(nctl_client: mock_client)
-      _db_ref = resolver.resolve(database_name: "myproject-maindb")
+  def test_pg_backups_download_honours_the_output_option
+    mock_client = MockNctlClient.new(pg_databases: [DEDICATED_DB], current_org: "myorg")
 
-      # Simulate the download command
-      fqdn = "db.example.com"
-      db_name = "maindb"
-      destination = "./myproject-maindb-latest-backup.zst"
-      cmd = ["rsync", "-avz", "dbadmin@#{fqdn}:~/backup/postgresql/latest/customer/#{db_name}/#{db_name}.zst", destination]
-      puts "> #{cmd.join(" ")}"
+    out, = run_backups_command(["download", "myproject-maindb", "--output", "/tmp/mine.zst"], mock_client)
+
+    assert_match(%r{maindb\.zst /tmp/mine\.zst}, out)
+  end
+
+  # What the tier classes refuse is their own business (and tested there); the
+  # CLI's job is to report the refusal and exit non-zero instead of crashing.
+  def test_pg_backups_capture_is_rejected_for_an_economy_database
+    mock_client = MockNctlClient.new(pg_databases: [ECONOMY_DB], current_org: "myorg")
+
+    out, err = run_backups_command(["capture", "myproject-shareddb"], mock_client, expect_exit: true)
+
+    assert_empty out, "nothing should have been attempted"
+    refute_empty err, "the reason should be reported on stderr"
+  end
+
+  def test_pg_backups_list_is_rejected_for_a_dedicated_instance
+    mock_client = MockNctlClient.new(pg_databases: [DEDICATED_DB], current_org: "myorg")
+
+    out, err = run_backups_command(["list", "myproject-maindb"], mock_client, expect_exit: true)
+
+    assert_empty out, "nothing should have been attempted"
+    refute_empty err, "the reason should be reported on stderr"
+  end
+
+  # `pg backups capture` puts the flag two subcommand levels below the root CLI,
+  # so this pins the whole dispatch chain rather than any one hop.
+  def test_dry_run_reaches_the_client_through_nested_subcommands
+    received = nil
+    build_client = lambda do |**kwargs|
+      received = kwargs
+      MockNctlClient.new(pg_databases: [DEDICATED_DB], current_org: "myorg")
     end
 
-    assert_match(/rsync -avz dbadmin@db.example.com:~\/backup\/postgresql\/latest\/customer\/maindb\/maindb.zst/, out)
+    out, = capture_io do
+      Deploio::NctlClient.stub(:new, build_client) do
+        Deploio::CLI.start(["pg", "backups", "capture", "myproject-maindb", "--dry-run"])
+      end
+    end
+
+    assert_equal true, received[:dry_run], "--dry-run was lost on the way to the client"
+    assert_match(/ssh dbadmin@db\.example\.com sudo nine-postgresql-backup/, out)
   end
 
   class MockNctlClient
@@ -98,6 +137,8 @@ class CLIPostgreSQLTest < Minitest::Test
       @current_org = current_org
       @dry_run = dry_run
     end
+
+    def check_requirements = nil
 
     def get_all_pg_databases
       @pg_databases

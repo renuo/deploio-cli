@@ -6,6 +6,7 @@ A CLI for [Deploio](https://www.deplo.io/) that wraps [`nctl`](https://github.co
 
 - Ruby 3.3+
 - nctl version 1.10.0 or higher
+- [rclone](https://rclone.org/) (`brew install rclone`) — only needed for `deploio pg backups` on economy-tier databases
 
 ## Installation
 
@@ -89,6 +90,13 @@ SERVICES
   deploio services -p PROJECT --url List services with connection URLs (requires -p)
   deploio services -p PROJECT --connected-apps  Show which apps use each service (requires -p)
   deploio services --chf                    Show estimated monthly price (CHF) for each service
+
+POSTGRESQL
+  deploio pg                                  List all PostgreSQL databases
+  deploio pg:info NAME                        Show database details
+  deploio pg backups list NAME                List available backups
+  deploio pg backups download NAME            Download the latest backup
+  deploio pg backups capture NAME             Capture a new backup
 
 LOGS
   deploio logs -a APP             Show recent logs
