@@ -100,6 +100,15 @@ module Deploio
 
     private
 
-    alias_method :build_option_args, :forwarded_option_args
+    # The aliases above hand off with Thor.start, which starts from a fresh
+    # option parse, so the shared class options have to be passed as arguments.
+    def build_option_args
+      args = []
+      args << "--dry-run" if options[:dry_run]
+      args << "--no-color" if options[:no_color]
+      args << "--app" << options[:app] if options[:app]
+      args << "--org" << options[:org] if options[:org]
+      args
+    end
   end
 end

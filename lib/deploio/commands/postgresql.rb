@@ -113,15 +113,6 @@ module Deploio
       desc "backups COMMAND", "Manage PostgreSQL database backups"
       subcommand "backups", Commands::PostgreSQLBackups
 
-      # Replaces the dispatch method Thor generates for the subcommand above,
-      # which loses class options like --dry-run at this nesting depth.
-      remove_method :backups
-      no_commands do
-        def backups(*args)
-          Commands::PostgreSQLBackups.start(args + forwarded_option_args)
-        end
-      end
-
       private
 
       def presence(value, default: "-")

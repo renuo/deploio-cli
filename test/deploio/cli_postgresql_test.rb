@@ -110,6 +110,25 @@ class CLIPostgreSQLTest < Minitest::Test
     refute_empty err, "the reason should be reported on stderr"
   end
 
+  # `pg backups capture` puts the flag two subcommand levels below the root CLI,
+  # so this pins the whole dispatch chain rather than any one hop.
+  def test_dry_run_reaches_the_client_through_nested_subcommands
+    received = nil
+    build_client = lambda do |**kwargs|
+      received = kwargs
+      MockNctlClient.new(pg_databases: [DEDICATED_DB], current_org: "myorg")
+    end
+
+    out, = capture_io do
+      Deploio::NctlClient.stub(:new, build_client) do
+        Deploio::CLI.start(["pg", "backups", "capture", "myproject-maindb", "--dry-run"])
+      end
+    end
+
+    assert_equal true, received[:dry_run], "--dry-run was lost on the way to the client"
+    assert_match(/ssh dbadmin@db\.example\.com sudo nine-postgresql-backup/, out)
+  end
+
   class MockNctlClient
     attr_reader :current_org
 
