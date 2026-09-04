@@ -3,7 +3,7 @@
 require "test_helper"
 
 class MysqlDatabaseBackupServiceTest < Minitest::Test
-  PROJECT = "renuo-chess-tracker"
+  PROJECT = "renuo-swissict-develop"
   INSTANCE_NAME = "1c62958_53f1258"
 
   def backup_bucket(name, endpoint: "cz42.objects.nineapis.ch")
@@ -51,7 +51,7 @@ class MysqlDatabaseBackupServiceTest < Minitest::Test
       db_ref: db_ref(database_name),
       data: data,
       nctl_client: MockNctlClient.new(buckets: buckets),
-      name: "chess-tracker-#{database_name}",
+      name: "#{PROJECT}-#{database_name}",
       rclone_client_factory: -> { rclone }
     )
     [service, rclone]
@@ -67,7 +67,7 @@ class MysqlDatabaseBackupServiceTest < Minitest::Test
   def test_default_destination_is_named_after_the_database
     service, = build_service(buckets: [])
 
-    assert_equal "./chess-tracker-main-latest-backup.sql.zst", service.default_destination
+    assert_equal "./#{PROJECT}-main-latest-backup.sql.zst", service.default_destination
   end
 
   def test_finds_the_backup_bucket_named_after_the_database
@@ -152,7 +152,7 @@ class MysqlDatabaseBackupServiceTest < Minitest::Test
 
   def test_download_fetches_the_latest_backup
     service, rclone = build_service(
-      buckets: [backup_bucket("mysqlsdatabase-main-cffe5c3")],
+      buckets: [backup_bucket("mysqldatabase-main-cffe5c3")],
       objects: [
         object("MySQLDatabase-#{INSTANCE_NAME}-2026-07-29-0224.sql.zst", "2026-07-29T02:24:45Z"),
         object("MySQLDatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst", "2026-07-30T02:24:22Z")
@@ -161,7 +161,7 @@ class MysqlDatabaseBackupServiceTest < Minitest::Test
 
     backup = service.download(destination: "./out.sql.zst")
 
-    assert_equal "MySQLatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst", backup["Name"]
+    assert_equal "MySQLDatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst", backup["Name"]
     assert_equal [[
                     "mysqldatabase-main-cffe5c3",
                     "MySQLDatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst",
@@ -217,3 +217,4 @@ class MysqlDatabaseBackupServiceTest < Minitest::Test
     def get_bucket_user_secret_key(_name, project:) = "secret-key"
   end
 end
+
