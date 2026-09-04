@@ -22,7 +22,6 @@ module Deploio
       def list(name)
         backups = backup_service_for(name).backups
         if backups.empty?
-          raise
           Output.warning("No backups found for '#{name}'")
           return
         end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Deploio
   module Commands
     class MySQL < Thor
@@ -70,14 +71,16 @@ module Deploio
         puts
 
         Output.header("General")
-        Output.table([
-                       ["Name", presence(metadata["name"])],
-                       ["Project", presence(metadata["namespace"])],
-                       ["Kind", presence(kind, default: "-")],
-                       ["Version", presence(for_provider["version"], default: "?")],
-                       ["FQDN", presence(at_provider["fqdn"])],
-                       ["Size", presence(at_provider["size"], default: "-")]
-                     ])
+        Output.table(
+          [
+            ["Name", presence(metadata["name"])],
+            ["Project", presence(metadata["namespace"])],
+            ["Kind", presence(kind, default: "-")],
+            ["Version", presence(for_provider["version"], default: "?")],
+            ["FQDN", presence(at_provider["fqdn"])],
+            ["Size", presence(at_provider["size"], default: "-")]
+          ]
+        )
 
         puts
 
@@ -86,18 +89,22 @@ module Deploio
         ready_condition = conditions.find { |c| c["type"] == "Ready" }
         synced_condition = conditions.find { |c| c["type"] == "Synced" }
 
-        Output.table([
-                       ["Ready", presence(ready_condition&.dig("status"))],
-                       ["Synced", presence(synced_condition&.dig("status"))]
-                     ])
+        Output.table(
+          [
+            ["Ready", presence(ready_condition&.dig("status"))],
+            ["Synced", presence(synced_condition&.dig("status"))]
+          ]
+        )
 
         if for_provider["allowedCIDRs"].is_a?(Array)
           puts
 
           Output.header("Access")
-          Output.table([
-                         ["Allowed CIDRs", for_provider["allowedCIDRs"].join(", ")]
-                       ])
+          Output.table(
+            [
+              ["Allowed CIDRs", for_provider["allowedCIDRs"].join(", ")]
+            ]
+          )
 
           puts
 

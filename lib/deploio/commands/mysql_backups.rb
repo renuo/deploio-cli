@@ -22,7 +22,6 @@ module Deploio
       def list(name)
         backups = backup_service_for(name).backups
         if backups.empty?
-          raise
           Output.warning("No backups found for '#{name}'")
           return
         end
@@ -42,7 +41,6 @@ module Deploio
       def download(name)
         service = backup_service_for(name)
         destination = merged_options[:output] || service.default_destination
-        binding.irb
         backup = service.download(destination: destination, db_name: merged_options[:db_name])
 
         # Only the economy tier knows when its backup was taken.
@@ -83,7 +81,7 @@ module Deploio
       end
 
       def format_size(bytes)
-        # bytes = bytes.to_i
+        bytes = bytes.to_i
         units = ["B", "KiB", "MiB", "GiB", "TiB"]
         index = 0
         size = bytes.to_f
