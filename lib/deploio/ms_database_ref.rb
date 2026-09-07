@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
 module Deploio
-  class PgDatabaseRef < DatabaseRef
+  class MsDatabaseRef < DatabaseRef
     private
 
     def error_class
-      Deploio::PgDatabaseNotFoundError
+      Deploio::MsDatabaseNotFoundError
     end
 
     def command
-      "pg"
+      "ms"
     end
 
     def database_type
-      "Postgres"
+      "MySQL"
     end
   end
 end

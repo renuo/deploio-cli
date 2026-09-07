@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 module Deploio
-  class PostgresDatabaseBackupService < DatabaseBackupService
+  class MysqlDatabaseBackupService < DatabaseBackupService
     private
 
     def resource_kind
-      "PostgresDatabase"
+      "MySQLDatabase"
     end
 
     def backup_command
-      "pg"
+      "ms"
     end
   end
 end

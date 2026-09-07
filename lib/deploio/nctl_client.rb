@@ -100,6 +100,41 @@ module Deploio
       nil
     end
 
+    def get_all_ms_databases
+      output_dedicated_dbs = capture("get", "mysql", "-A", "-o", "json")
+      output_shared_dbs = capture("get", "mysqldatabase", "-A", "-o", "json")
+      if (output_dedicated_dbs.nil? || output_dedicated_dbs.empty?) &&
+         (output_shared_dbs.nil? || output_shared_dbs.empty?)
+        return []
+      end
+
+      [
+        *JSON.parse(output_dedicated_dbs),
+        *JSON.parse(output_shared_dbs)
+      ]
+    rescue JSON::ParserError
+      []
+    end
+    def get_ms_database(db_ref)
+      output = begin
+        capture("get", "mysql", db_ref.database_name,
+                "--project", db_ref.project_name, "-o", "json")
+      rescue Deploio::NctlError
+        nil
+      end
+
+      if output.nil? || output.empty?
+        output = capture("get", "mysqldatabase", db_ref.database_name,
+                         "--project", db_ref.project_name, "-o", "json")
+      end
+
+      return nil if output.nil? || output.empty?
+
+      JSON.parse(output)
+    rescue JSON::ParserError
+      nil
+    end
+
     def get_apps_by_project(project)
       output = capture("get", "apps", "--project", project, "-o", "json")
       return [] if output.nil? || output.empty?

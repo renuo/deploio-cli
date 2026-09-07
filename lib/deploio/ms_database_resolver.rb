@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 module Deploio
-  class PgDatabaseResolver < DatabaseResolver
+  class MsDatabaseResolver < DatabaseResolver
     private
 
     def fetch_databases
-      nctl.get_all_pg_databases
+      nctl.get_all_ms_databases
     end
 
     def database_ref
-      PgDatabaseRef
+      MsDatabaseRef
     end
   end
 end
