@@ -72,8 +72,8 @@ module Deploio
     def bucket
       @bucket ||= begin
         candidates = @nctl
-         .get_services_by_type("bucket", project: @db_ref.project_name)
-         .select { |candidate| backup_bucket_for_database?(candidate) }
+          .get_services_by_type("bucket", project: @db_ref.project_name)
+          .select { |candidate| backup_bucket_for_database?(candidate) }
 
         if candidates.empty?
           raise Deploio::Error,

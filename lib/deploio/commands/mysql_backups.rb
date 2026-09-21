@@ -70,7 +70,7 @@ module Deploio
           MysqlDatabaseBackupService.new(db_ref: db_ref, data: data, nctl_client: @nctl, name: name)
         else
           raise Deploio::UnsupportedBackupOperationError,
-                "Backups are not supported for databases of kind '#{data["kind"]}'."
+            "Backups are not supported for databases of kind '#{data["kind"]}'."
         end
       end
 

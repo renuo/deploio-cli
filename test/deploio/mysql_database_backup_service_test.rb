@@ -163,10 +163,10 @@ class MysqlDatabaseBackupServiceTest < Minitest::Test
 
     assert_equal "MySQLDatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst", backup["Name"]
     assert_equal [[
-                    "mysqldatabase-main-cffe5c3",
-                    "MySQLDatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst",
-                    "./out.sql.zst"
-                  ]], rclone.downloaded
+      "mysqldatabase-main-cffe5c3",
+      "MySQLDatabase-#{INSTANCE_NAME}-2026-07-30-0224.sql.zst",
+      "./out.sql.zst"
+    ]], rclone.downloaded
   end
 
   def test_download_raises_when_the_bucket_holds_no_backups
@@ -217,4 +217,3 @@ class MysqlDatabaseBackupServiceTest < Minitest::Test
     def get_bucket_user_secret_key(_name, project:) = "secret-key"
   end
 end
-

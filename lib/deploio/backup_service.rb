@@ -15,8 +15,8 @@ module Deploio
 
     def backups
       raise Deploio::UnsupportedBackupOperationError,
-            "Listing backups is not yet supported for dedicated #{database_type} instances; Feel free to implement it!\n" \
-              "Use '#{backup_download_command}' to fetch it."
+        "Listing backups is not yet supported for dedicated #{database_type} instances; Feel free to implement it!\n" \
+          "Use '#{backup_download_command}' to fetch it."
     end
 
     def capture
@@ -46,12 +46,12 @@ module Deploio
     def resolve_db_name(db_name)
       if databases.empty?
         raise Deploio::Error,
-              "No databases found in #{database_type} instance; cannot download backup."
+          "No databases found in #{database_type} instance; cannot download backup."
       elsif databases.size > 1 && db_name.nil?
         raise Deploio::Error,
-              "Multiple databases found in #{database_type} instance\n" \
-                "Databases: #{databases.join(", ")}\n" \
-                "Please specify the database name using the --db_name option."
+          "Multiple databases found in #{database_type} instance\n" \
+            "Databases: #{databases.join(", ")}\n" \
+            "Please specify the database name using the --db_name option."
       end
 
       db_name || databases.first
@@ -68,7 +68,7 @@ module Deploio
 
       if value.nil? || value.empty?
         raise Deploio::Error,
-              "Database FQDN not found; cannot reach the database server."
+          "Database FQDN not found; cannot reach the database server."
       end
 
       value
