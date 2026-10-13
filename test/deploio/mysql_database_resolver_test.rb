@@ -2,16 +2,16 @@
 
 require "test_helper"
 
-class MsDatabaseResolverTest < Minitest::Test
+class MysqlDatabaseResolverTest < Minitest::Test
   def setup
     @nctl = MockNctlClient.new(dry_run: true)
   end
 
   def test_raises_error_when_database_not_found_in_dry_run
-    # In dry_run mode, get_all_ms_databases returns empty, so database won't be found
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: @nctl)
+    # In dry_run mode, get_all_mysql_databases returns empty, so database won't be found
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: @nctl)
 
-    error = assert_raises(Deploio::MsDatabaseNotFoundError) do
+    error = assert_raises(Deploio::MysqlDatabaseNotFoundError) do
       resolver.resolve(database_name: "myproject-maindb")
     end
 
@@ -19,7 +19,7 @@ class MsDatabaseResolverTest < Minitest::Test
   end
 
   def test_raises_error_when_no_database_specified
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: @nctl)
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: @nctl)
 
     error = assert_raises(Deploio::Error) { resolver.resolve }
 
@@ -27,10 +27,10 @@ class MsDatabaseResolverTest < Minitest::Test
   end
 
   def test_resolves_from_available_databases
-    nctl = MockNctlClient.new(ms_databases: [
+    nctl = MockNctlClient.new(mysql_databases: [
       {"metadata" => {"namespace" => "n10518", "name" => "maindb"}}
     ])
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: nctl)
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: nctl)
 
     result = resolver.resolve(database_name: "n10518-maindb")
 
@@ -40,10 +40,10 @@ class MsDatabaseResolverTest < Minitest::Test
 
   def test_resolves_short_name_with_current_org
     nctl = MockNctlClient.new(
-      ms_databases: [{"metadata" => {"namespace" => "myorg-myproject", "name" => "mysql"}}],
+      mysql_databases: [{"metadata" => {"namespace" => "myorg-myproject", "name" => "mysql"}}],
       current_org: "myorg"
     )
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: nctl)
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: nctl)
 
     # Can resolve using short name (without org prefix)
     result = resolver.resolve(database_name: "myproject-mysql")
@@ -54,13 +54,13 @@ class MsDatabaseResolverTest < Minitest::Test
 
   def test_available_databases_hash_includes_both_full_and_short_names
     nctl = MockNctlClient.new(
-      ms_databases: [
+      mysql_databases: [
         {"metadata" => {"namespace" => "myorg-myproject", "name" => "maindb"}},
         {"metadata" => {"namespace" => "otherorg-project", "name" => "testdb"}}
       ],
       current_org: "myorg"
     )
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: nctl)
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: nctl)
 
     hash = resolver.available_databases_hash
 
@@ -75,21 +75,21 @@ class MsDatabaseResolverTest < Minitest::Test
 
   def test_short_name_for_strips_org_prefix
     nctl = MockNctlClient.new(current_org: "myorg")
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: nctl)
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: nctl)
 
     assert_equal "myproject-maindb", resolver.short_name_for("myorg-myproject", "maindb")
   end
 
   def test_short_name_for_keeps_full_name_without_org
     nctl = MockNctlClient.new(current_org: nil)
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: nctl)
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: nctl)
 
     assert_equal "someorg-myproject-mysql", resolver.short_name_for("someorg-myproject", "mysql")
   end
 
   def test_short_name_for_with_different_org
     nctl = MockNctlClient.new(current_org: "myorg")
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: nctl)
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: nctl)
 
     # Database from different org should keep full namespace
     assert_equal "otherorg-project-db", resolver.short_name_for("otherorg-project", "db")
@@ -97,13 +97,13 @@ class MsDatabaseResolverTest < Minitest::Test
 
   def test_available_databases_hash_handles_missing_metadata
     nctl = MockNctlClient.new(
-      ms_databases: [
+      mysql_databases: [
         {"metadata" => {"namespace" => "valid-project", "name" => "db"}},
         {"metadata" => {"namespace" => "", "name" => ""}}, # Empty strings
         {} # Missing metadata entirely
       ]
     )
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: nctl)
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: nctl)
 
     hash = resolver.available_databases_hash
 
@@ -115,7 +115,7 @@ class MsDatabaseResolverTest < Minitest::Test
 
   def test_available_databases_hash_handles_errors_gracefully
     nctl = MockNctlClient.new(error_on_get: true)
-    resolver = Deploio::MsDatabaseResolver.new(nctl_client: nctl)
+    resolver = Deploio::MysqlDatabaseResolver.new(nctl_client: nctl)
 
     hash = resolver.available_databases_hash
 
@@ -126,21 +126,21 @@ class MsDatabaseResolverTest < Minitest::Test
   class MockNctlClient
     attr_reader :current_org, :dry_run
 
-    def initialize(ms_databases: [], current_org: nil, dry_run: false, error_on_get: false)
-      @ms_databases = ms_databases
+    def initialize(mysql_databases: [], current_org: nil, dry_run: false, error_on_get: false)
+      @mysql_databases = mysql_databases
       @current_org = current_org
       @dry_run = dry_run
       @error_on_get = error_on_get
     end
 
-    def get_all_ms_databases
+    def get_all_mysql_databases
       raise "Simulated error" if @error_on_get
 
-      @ms_databases
+      @mysql_databases
     end
 
-    def get_ms_database(db_ref)
-      @ms_databases.find do |db|
+    def get_mysql_database(db_ref)
+      @mysql_databases.find do |db|
         metadata = db["metadata"] || {}
         metadata["namespace"] == db_ref.project_name &&
           metadata["name"] == db_ref.database_name

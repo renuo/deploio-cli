@@ -100,7 +100,7 @@ module Deploio
       nil
     end
 
-    def get_all_ms_databases
+    def get_all_mysql_databases
       output_dedicated_dbs = capture("get", "mysql", "-A", "-o", "json")
       output_shared_dbs = capture("get", "mysqldatabase", "-A", "-o", "json")
       if (output_dedicated_dbs.nil? || output_dedicated_dbs.empty?) &&
@@ -116,7 +116,7 @@ module Deploio
       []
     end
 
-    def get_ms_database(db_ref)
+    def get_mysql_database(db_ref)
       output = begin
         capture("get", "mysql", db_ref.database_name,
           "--project", db_ref.project_name, "-o", "json")

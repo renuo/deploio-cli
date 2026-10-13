@@ -5,7 +5,7 @@ module Deploio
     class MySQL < Thor
       include SharedOptions
 
-      namespace "ms"
+      namespace "mysql"
 
       class_option :json, type: :boolean, default: false, desc: "Output as JSON"
 
@@ -14,7 +14,7 @@ module Deploio
       desc "list", "List all MySQL databases"
       def list
         setup_options
-        raw_dbs = @nctl.get_all_ms_databases
+        raw_dbs = @nctl.get_all_mysql_databases
 
         if options[:json]
           puts JSON.pretty_generate(raw_dbs)
@@ -26,12 +26,12 @@ module Deploio
           return
         end
 
-        resolver = MsDatabaseResolver.new(nctl_client: @nctl)
+        resolver = MysqlDatabaseResolver.new(nctl_client: @nctl)
 
-        rows = raw_dbs.map do |ms|
-          kind = ms["kind"] || ""
-          metadata = ms["metadata"] || {}
-          spec = ms["spec"] || {}
+        rows = raw_dbs.map do |mysql_database|
+          kind = mysql_database["kind"] || ""
+          metadata = mysql_database["metadata"] || {}
+          spec = mysql_database["spec"] || {}
           for_provider = spec["forProvider"] || {}
           version = for_provider["version"]
           namespace = metadata["namespace"] || ""
@@ -51,9 +51,9 @@ module Deploio
       desc "info NAME", "Show MySQL database details"
       def info(name)
         setup_options
-        resolver = MsDatabaseResolver.new(nctl_client: @nctl)
+        resolver = MysqlDatabaseResolver.new(nctl_client: @nctl)
         db_ref = resolver.resolve(database_name: name)
-        data = @nctl.get_ms_database(db_ref)
+        data = @nctl.get_mysql_database(db_ref)
 
         if options[:json]
           puts JSON.pretty_generate(data)

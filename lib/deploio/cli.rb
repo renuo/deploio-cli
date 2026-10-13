@@ -59,8 +59,8 @@ module Deploio
     desc "pg COMMAND", "PostgreSQL database management commands"
     subcommand "pg", Commands::PostgreSQL
 
-    desc "ms COMMAND", "MySQL database management commands"
-    subcommand "ms", Commands::MySQL
+    desc "mysql COMMAND", "MySQL database management commands"
+    subcommand "mysql", Commands::MySQL
 
     # Shortcut for auth:login
     desc "login", "Authenticate with nctl (alias for auth:login)"

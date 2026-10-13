@@ -5,7 +5,7 @@ module Deploio
     class MySQLBackups < Thor
       include SharedOptions
 
-      namespace "ms:backups"
+      namespace "mysql:backups"
 
       DEDICATED_KIND = "MySQL"
       ECONOMY_KIND = "MySQLDatabase"
@@ -58,9 +58,9 @@ module Deploio
 
       def backup_service_for(name)
         setup_options
-        resolver = MsDatabaseResolver.new(nctl_client: @nctl)
+        resolver = MysqlDatabaseResolver.new(nctl_client: @nctl)
         db_ref = resolver.resolve(database_name: name)
-        data = @nctl.get_ms_database(db_ref)
+        data = @nctl.get_mysql_database(db_ref)
         raise Deploio::Error, "Could not read database '#{db_ref.full_name}'." if data.nil?
 
         case data["kind"]

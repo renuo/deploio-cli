@@ -1,17 +1,19 @@
 # frozen_string_literal: true
 
 module Deploio
-  class DatabaseResolver
+  class MysqlDatabaseResolver
     attr_reader :nctl, :current_org
 
     def initialize(nctl_client:)
       @nctl = nctl_client
+      @database_ref = MysqlDatabaseRef
+      @fetch_databases = -> { @nctl.get_all_mysql_databases }
       @current_org = @nctl.current_org
     end
 
     def resolve(database_name: nil)
       if database_name
-        return database_ref.new(
+        return @database_ref.new(
           database_name,
           available_databases: available_databases_hash
         )
@@ -26,7 +28,7 @@ module Deploio
         hash = {}
         current_org = @nctl.current_org
 
-        fetch_databases.each do |database|
+        @fetch_databases.call.each do |database|
           metadata = database["metadata"] || {}
           project_name = metadata["namespace"] || ""
           database_name = metadata["name"]
@@ -64,40 +66,6 @@ module Deploio
       else
         "#{namespace}-#{database_name}"
       end
-    end
-
-    private
-
-    def fetch_databases
-      raise NotImplementedError
-    end
-
-    def database_ref
-      raise NotImplementedError
-    end
-  end
-
-  class MsDatabaseResolver < DatabaseResolver
-    private
-
-    def fetch_databases
-      nctl.get_all_ms_databases
-    end
-
-    def database_ref
-      MsDatabaseRef
-    end
-  end
-
-  class PgDatabaseResolver < DatabaseResolver
-    private
-
-    def fetch_databases
-      nctl.get_all_pg_databases
-    end
-
-    def database_ref
-      PgDatabaseRef
     end
   end
 end

@@ -29,7 +29,7 @@ class MysqlDatabaseBackupServiceTest < Minitest::Test
   end
 
   def db_ref(database_name = "main")
-    Deploio::MsDatabaseRef.new(
+    Deploio::MysqlDatabaseRef.new(
       "#{PROJECT}-#{database_name}",
       available_databases: {
         "#{PROJECT}-#{database_name}" => {project_name: PROJECT, database_name: database_name}
