@@ -28,8 +28,8 @@ module Deploio
     def capture
       raise Deploio::UnsupportedBackupOperationError,
         "'#{@db_ref.full_name}' is an economy-tier database. Those are backed up automatically " \
-        "on their configured schedule and cannot be captured manually.\n" \
-        "Use 'deploio pg backups list #{@name}' to see the available backups."
+          "on their configured schedule and cannot be captured manually.\n" \
+          "Use 'deploio pg backups list #{@name}' to see the available backups."
     end
 
     def backups
@@ -78,7 +78,7 @@ module Deploio
         if candidates.empty?
           raise Deploio::Error,
             "No backup bucket found for '#{@db_ref.full_name}'. " \
-            "Check that backups are enabled for this database (spec.forProvider.backupSchedule)."
+              "Check that backups are enabled for this database (spec.forProvider.backupSchedule)."
         end
 
         candidates.first

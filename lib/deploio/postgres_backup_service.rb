@@ -20,7 +20,7 @@ module Deploio
     def backups
       raise Deploio::UnsupportedBackupOperationError,
         "Listing backups is not yet supported for dedicated PostgreSQL instances; Feel free to implement it!\n" \
-        "Use 'deploio pg backups download #{@name}' to fetch it."
+          "Use 'deploio pg backups download #{@name}' to fetch it."
     end
 
     def capture
@@ -47,8 +47,8 @@ module Deploio
       elsif databases.size > 1 && db_name.nil?
         raise Deploio::Error,
           "Multiple databases found in PostgreSQL instance\n" \
-          "Databases: #{databases.join(", ")}\n" \
-          "Please specify the database name using the --db_name option."
+            "Databases: #{databases.join(", ")}\n" \
+            "Please specify the database name using the --db_name option."
       end
 
       db_name || databases.first
