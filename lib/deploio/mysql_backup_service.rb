@@ -15,12 +15,12 @@ module Deploio
 
     def backups
       raise Deploio::UnsupportedBackupOperationError,
-        "Listing backups is not yet supported for dedicated #{database_type} instances; Feel free to implement it!\n" \
-          "Use '#{backup_download_command}' to fetch it."
+        "Listing backups is not yet supported for dedicated MySQL instances; Feel free to implement it!\n" \
+          "Use 'deploio mysql backups download #{@name}' to fetch it."
     end
 
     def capture
-      cmd = ["ssh", "dbadmin@#{fqdn}", "sudo", backup_command]
+      cmd = ["ssh", "dbadmin@#{fqdn}", "sudo", "nine-mysql-backup"]
       Output.command(cmd.join(" "))
       system(*cmd) unless @dry_run
     end
@@ -31,7 +31,7 @@ module Deploio
       cmd = [
         "rsync",
         "-av",
-        "dbadmin@#{fqdn}:~/backup/#{backup_directory}/latest/customer/#{name}/#{name}.zst",
+        "dbadmin@#{fqdn}:~/backup/mysql/latest/customer/#{name}/#{name}.zst",
         destination
       ]
 
@@ -46,10 +46,10 @@ module Deploio
     def resolve_db_name(db_name)
       if databases.empty?
         raise Deploio::Error,
-          "No databases found in #{database_type} instance; cannot download backup."
+          "No databases found in MySQL instance; cannot download backup."
       elsif databases.size > 1 && db_name.nil?
         raise Deploio::Error,
-          "Multiple databases found in #{database_type} instance\n" \
+          "Multiple databases found in MySQL instance\n" \
             "Databases: #{databases.join(", ")}\n" \
             "Please specify the database name using the --db_name option."
       end
@@ -73,13 +73,5 @@ module Deploio
 
       value
     end
-
-    def database_type = "MySQL"
-
-    def backup_command = "nine-mysql-backup"
-
-    def backup_directory = "mysql"
-
-    def backup_download_command = "deploio mysql backups download #{@name}"
   end
 end
