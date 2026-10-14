@@ -1,17 +1,16 @@
 # frozen_string_literal: true
 
 module Deploio
+  # Backups for the economy tier (kind: PostgresDatabase), where the database
+  # lives on a shared server we have no access to.
+  # The naming is confusing, but this is how Nine names them and how the resources appear, so prefer to stay
+  # consistent with that
   class PostgresDatabaseBackupService
     DEFAULT_EXTENSION = ".sql.zst"
+
     BACKUP_SCHEDULE_LABEL = "DatabaseBackupSchedule"
 
-    def initialize(
-      db_ref:,
-      data:,
-      nctl_client:,
-      name: nil,
-      rclone_client_factory: nil
-    )
+    def initialize(db_ref:, data:, nctl_client:, name: nil, rclone_client_factory: nil)
       @db_ref = db_ref
       @data = data || {}
       @nctl = nctl_client
@@ -23,28 +22,28 @@ module Deploio
       "./#{@name}-latest-backup#{DEFAULT_EXTENSION}"
     end
 
-    # Nine takes these backups on a schedule and there is no way to trigger one.
+    # Nine takes these backups on a schedule
+    # (you can even see them using `kubectl get databasebackupschedules.storage.nine.ch -n renuo-chess-tracker -o json`)
+    # => there is no way to trigger one.
     def capture
       raise Deploio::UnsupportedBackupOperationError,
-        "'#{@db_ref.full_name}' is an economy-tier database. Those are backed up automatically " \
-          "on their configured schedule and cannot be captured manually.\n" \
-          "Use 'deploio #{backup_command} backups list #{@name}' to see the available backups."
+            "'#{@db_ref.full_name}' is an economy-tier database. Those are backed up automatically " \
+              "on their configured schedule and cannot be captured manually.\n" \
+              "Use 'deploio pg backups list #{@name}' to see the available backups."
     end
 
     def backups
       @backups ||= begin
-        entries = rclone.list(bucket_name)
-        entries = entries.select { |entry| own_backup?(entry["Name"].to_s) }
-        entries.sort_by { |entry| entry["ModTime"].to_s }.reverse
-      end
+                     entries = rclone.list(bucket_name)
+                     entries = entries.select { |e| own_backup?(e["Name"].to_s) }
+                     entries.sort_by { |e| e["ModTime"].to_s }.reverse
+                   end
     end
 
     def download(destination:, db_name: nil)
       backup = backups.first
-
       unless backup
-        raise Deploio::Error,
-          "No backups found for '#{@db_ref.full_name}' in bucket '#{bucket_name}'."
+        raise Deploio::Error, "No backups found for '#{@db_ref.full_name}' in bucket '#{bucket_name}'."
       end
 
       rclone.download(bucket_name, backup["Name"], destination)
@@ -56,7 +55,7 @@ module Deploio
     def own_backup?(object_name)
       return true if instance_name.empty?
 
-      object_name.start_with?("#{resource_kind}-#{instance_name}-")
+      object_name.start_with?("PostgresDatabase-#{instance_name}-")
     end
 
     def instance_name
@@ -67,34 +66,31 @@ module Deploio
       bucket.dig("metadata", "name")
     end
 
-    # The database resource holds no reference to its backup bucket.
-    # Therefore, match the bucket by name for now.
+    # The PostgresDatabase resource holds no reference to its backup bucket
+    # Changes with service connections (I assume), but we're not there yet as we still have projects with the old setup.
+    # Therefore, we match by name
     def bucket
       @bucket ||= begin
-        candidates = @nctl
-          .get_services_by_type("bucket", project: @db_ref.project_name)
-          .select { |candidate| backup_bucket_for_database?(candidate) }
+                    candidates = @nctl.get_services_by_type("bucket", project: @db_ref.project_name).select do |bucket|
+                      backup_bucket_for_database?(bucket)
+                    end
 
-        if candidates.empty?
-          raise Deploio::Error,
-            "No backup bucket found for '#{@db_ref.full_name}'. " \
-              "Check that backups are enabled for this database " \
-              "(spec.forProvider.backupSchedule)."
-        end
+                    if candidates.empty?
+                      raise Deploio::Error,
+                            "No backup bucket found for '#{@db_ref.full_name}'. " \
+                              "Check that backups are enabled for this database (spec.forProvider.backupSchedule)."
+                    end
 
-        candidates.first
-      end
+                    candidates.first
+                  end
     end
 
     def backup_bucket_for_database?(bucket)
       metadata = bucket["metadata"] || {}
       labels = metadata["labels"] || {}
-
       return false unless labels["nine.ch/controllerKind"] == BACKUP_SCHEDULE_LABEL
 
-      metadata["name"].to_s.match?(
-        /\A#{resource_kind.downcase}-#{Regexp.escape(@db_ref.database_name)}-[0-9a-f]{7}\z/
-      )
+      metadata["name"].to_s.match?(/\Apostgresdatabase-#{Regexp.escape(@db_ref.database_name)}-[0-9a-f]{7}\z/)
     end
 
     def rclone
@@ -103,31 +99,18 @@ module Deploio
 
     def build_rclone_client
       endpoint = bucket.dig("status", "atProvider", "endpoint")
-
       if endpoint.nil? || endpoint.to_s.empty?
-        raise Deploio::Error,
-          "Backup bucket '#{bucket_name}' has no endpoint; cannot access backups."
+        raise Deploio::Error, "Backup bucket '#{bucket_name}' has no endpoint; cannot access backups."
       end
 
       client = RcloneClient.new(
         endpoint: "https://#{endpoint}",
-        access_key: @nctl.get_bucket_user_access_key(
-          bucket_name,
-          project: @db_ref.project_name
-        ),
-        secret_key: @nctl.get_bucket_user_secret_key(
-          bucket_name,
-          project: @db_ref.project_name
-        ),
+        access_key: @nctl.get_bucket_user_access_key(bucket_name, project: @db_ref.project_name),
+        secret_key: @nctl.get_bucket_user_secret_key(bucket_name, project: @db_ref.project_name),
         dry_run: @nctl.dry_run
       )
-
       client.check_requirements unless @nctl.dry_run
       client
     end
-
-    def resource_kind = "PostgresDatabase"
-
-    def backup_command = "pg"
   end
 end
