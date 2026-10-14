@@ -11,5 +11,11 @@ module Deploio
       end
       (index.zero? ? "#{bytes} B" : format("%.1f %s", size, units[index]))
     end
+
+    def format_time(value)
+      Time.parse(value.to_s).localtime.strftime("%Y-%m-%d %H:%M")
+    rescue ArgumentError, TypeError
+      value.to_s
+    end
   end
 end

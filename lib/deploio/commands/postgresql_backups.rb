@@ -27,7 +27,7 @@ module Deploio
         end
 
         rows = backups.map do |backup|
-          [format_time(backup["ModTime"]), BackupFormatting.format_size(backup["Size"]), backup["Name"]]
+          [BackupFormatting.format_time(backup["ModTime"]), BackupFormatting.format_size(backup["Size"]), backup["Name"]]
         end
         Output.table(rows, headers: ["DATE", "SIZE", "NAME"])
       rescue Deploio::Error => e
@@ -45,7 +45,7 @@ module Deploio
 
         # Only the economy tier knows when its backup was taken.
         if backup
-          Output.success("Downloaded backup from #{format_time(backup["ModTime"])} to #{destination}")
+          Output.success("Downloaded backup from #{BackupFormatting.format_time(backup["ModTime"])} to #{destination}")
         else
           Output.success("Downloaded backup to #{destination}")
         end
@@ -72,12 +72,6 @@ module Deploio
           raise Deploio::UnsupportedBackupOperationError,
             "Backups are not supported for databases of kind '#{data["kind"]}'."
         end
-      end
-
-      def format_time(value)
-        Time.parse(value.to_s).localtime.strftime("%Y-%m-%d %H:%M")
-      rescue ArgumentError, TypeError
-        value.to_s
       end
     end
   end
