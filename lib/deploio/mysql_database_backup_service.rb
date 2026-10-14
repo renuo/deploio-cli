@@ -28,7 +28,7 @@ module Deploio
       raise Deploio::UnsupportedBackupOperationError,
         "'#{@db_ref.full_name}' is an economy-tier database. Those are backed up automatically " \
           "on their configured schedule and cannot be captured manually.\n" \
-          "Use 'deploio #{backup_command} backups list #{@name}' to see the available backups."
+          "Use 'deploio mysql backups list #{@name}' to see the available backups."
     end
 
     def backups
@@ -56,7 +56,7 @@ module Deploio
     def own_backup?(object_name)
       return true if instance_name.empty?
 
-      object_name.start_with?("#{resource_kind}-#{instance_name}-")
+      object_name.start_with?("MySQLDatabase-#{instance_name}-")
     end
 
     def instance_name
@@ -93,7 +93,7 @@ module Deploio
       return false unless labels["nine.ch/controllerKind"] == BACKUP_SCHEDULE_LABEL
 
       metadata["name"].to_s.match?(
-        /\A#{resource_kind.downcase}-#{Regexp.escape(@db_ref.database_name)}-[0-9a-f]{7}\z/
+        /\Amysqldatabase-#{Regexp.escape(@db_ref.database_name)}-[0-9a-f]{7}\z/
       )
     end
 
@@ -125,9 +125,5 @@ module Deploio
       client.check_requirements unless @nctl.dry_run
       client
     end
-
-    def resource_kind = "MySQLDatabase"
-
-    def backup_command = "mysql"
   end
 end
