@@ -11,7 +11,7 @@ module Deploio
       @dry_run = dry_run
     end
 
-    def default_destination = "./#{@name}-latest-backup#{DEFAULT_EXTENSION}"
+    def default_destination = "./#{@name}-latest-backup"
 
     def backups
       raise Deploio::UnsupportedBackupOperationError,
@@ -31,12 +31,14 @@ module Deploio
       cmd = [
         "rsync",
         "-av",
-        "dbadmin@#{fqdn}:~/backup/mysql/latest/customer/#{name}/#{name}.zst",
+        "dbadmin@#{fqdn}:~/backup/mysql/latest/customer/#{name}/",
         destination
       ]
 
       Output.command(cmd.join(" "))
-      system(*cmd) unless @dry_run
+      unless @dry_run || system(*cmd)
+        raise Deploio::Error, "Failed to download MySQL backup for database '#{name}'."
+      end
 
       nil
     end
