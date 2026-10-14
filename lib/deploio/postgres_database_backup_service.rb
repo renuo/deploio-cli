@@ -27,17 +27,17 @@ module Deploio
     # => there is no way to trigger one.
     def capture
       raise Deploio::UnsupportedBackupOperationError,
-            "'#{@db_ref.full_name}' is an economy-tier database. Those are backed up automatically " \
-              "on their configured schedule and cannot be captured manually.\n" \
-              "Use 'deploio pg backups list #{@name}' to see the available backups."
+        "'#{@db_ref.full_name}' is an economy-tier database. Those are backed up automatically " \
+          "on their configured schedule and cannot be captured manually.\n" \
+          "Use 'deploio pg backups list #{@name}' to see the available backups."
     end
 
     def backups
       @backups ||= begin
-                     entries = rclone.list(bucket_name)
-                     entries = entries.select { |e| own_backup?(e["Name"].to_s) }
-                     entries.sort_by { |e| e["ModTime"].to_s }.reverse
-                   end
+        entries = rclone.list(bucket_name)
+        entries = entries.select { |e| own_backup?(e["Name"].to_s) }
+        entries.sort_by { |e| e["ModTime"].to_s }.reverse
+      end
     end
 
     def download(destination:, db_name: nil)
@@ -71,18 +71,18 @@ module Deploio
     # Therefore, we match by name
     def bucket
       @bucket ||= begin
-                    candidates = @nctl.get_services_by_type("bucket", project: @db_ref.project_name).select do |bucket|
-                      backup_bucket_for_database?(bucket)
-                    end
+        candidates = @nctl.get_services_by_type("bucket", project: @db_ref.project_name).select do |bucket|
+          backup_bucket_for_database?(bucket)
+        end
 
-                    if candidates.empty?
-                      raise Deploio::Error,
-                            "No backup bucket found for '#{@db_ref.full_name}'. " \
-                              "Check that backups are enabled for this database (spec.forProvider.backupSchedule)."
-                    end
+        if candidates.empty?
+          raise Deploio::Error,
+            "No backup bucket found for '#{@db_ref.full_name}'. " \
+              "Check that backups are enabled for this database (spec.forProvider.backupSchedule)."
+        end
 
-                    candidates.first
-                  end
+        candidates.first
+      end
     end
 
     def backup_bucket_for_database?(bucket)
