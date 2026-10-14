@@ -1,6 +1,10 @@
+# frozen_string_literal: true
+
+require "time"
+
 module Deploio
-  module BackupFormatting
-    def self.format_size(bytes)
+  module BackupsHelper
+    def format_size(bytes)
       bytes = bytes.to_i
       units = ["B", "KiB", "MiB", "GiB", "TiB"]
       index = 0

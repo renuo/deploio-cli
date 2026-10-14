@@ -1,9 +1,8 @@
-require "time"
-
 module Deploio
   module Commands
     class PostgreSQLBackups < Thor
       include SharedOptions
+      include BackupsHelper
 
       namespace "pg:backups"
 
@@ -27,7 +26,7 @@ module Deploio
         end
 
         rows = backups.map do |backup|
-          [BackupFormatting.format_time(backup["ModTime"]), BackupFormatting.format_size(backup["Size"]), backup["Name"]]
+          [format_time(backup["ModTime"]), format_size(backup["Size"]), backup["Name"]]
         end
         Output.table(rows, headers: ["DATE", "SIZE", "NAME"])
       rescue Deploio::Error => e
@@ -45,7 +44,7 @@ module Deploio
 
         # Only the economy tier knows when its backup was taken.
         if backup
-          Output.success("Downloaded backup from #{BackupFormatting.format_time(backup["ModTime"])} to #{destination}")
+          Output.success("Downloaded backup from #{format_time(backup["ModTime"])} to #{destination}")
         else
           Output.success("Downloaded backup to #{destination}")
         end
