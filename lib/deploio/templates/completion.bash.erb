@@ -1,0 +1,140 @@
+# Bash completion for <%= program_name %>-cli
+# Auto-generated from Thor command definitions
+# Enable with: eval "$(<%= program_name %> completion --shell bash)"
+
+# Dynamic completion for organizations
+_<%= program_name %>_orgs_list() {
+  <%= program_name %> orgs --json 2>/dev/null | ruby -rjson -e '
+    data = JSON.parse(STDIN.read) rescue []
+    data.each { |o| puts o["name"] }
+  ' 2>/dev/null
+}
+
+# Dynamic completion for projects
+_<%= program_name %>_projects_list() {
+  <%= program_name %> projects --json 2>/dev/null | ruby -rjson -e '
+    data = JSON.parse(STDIN.read) rescue []
+    orgs_json = `<%= program_name %> orgs --json 2>/dev/null` rescue "[]"
+    orgs = JSON.parse(orgs_json) rescue []
+    current_org = orgs.find { |o| o["current"] }&.fetch("name", nil)
+
+    data.each do |p|
+      name = p.dig("metadata", "name") || ""
+      short_name = current_org && name.start_with?("#{current_org}-") ? name.delete_prefix("#{current_org}-") : name
+      puts short_name
+    end
+  ' 2>/dev/null
+}
+
+# Dynamic completion for apps
+_<%= program_name %>_apps_list() {
+  <%= program_name %> apps --json 2>/dev/null | ruby -rjson -e '
+    data = JSON.parse(STDIN.read) rescue []
+    orgs_json = `<%= program_name %> orgs --json 2>/dev/null` rescue "[]"
+    orgs = JSON.parse(orgs_json) rescue []
+    current_org = orgs.find { |o| o["current"] }&.fetch("name", nil)
+
+    data.each do |a|
+      ns = a.dig("metadata", "namespace") || ""
+      name = a.dig("metadata", "name") || ""
+      project = current_org && ns.start_with?("#{current_org}-") ? ns.delete_prefix("#{current_org}-") : ns
+      puts "#{project}-#{name}"
+    end
+  ' 2>/dev/null
+}
+
+# Dynamic completion for PostgreSQL databases
+_<%= program_name %>_pg_databases_list() {
+  <%= program_name %> pg list --json 2>/dev/null | ruby -rjson -e '
+    data = JSON.parse(STDIN.read) rescue []
+    orgs_json = `<%= program_name %> orgs --json 2>/dev/null` rescue "[]"
+    orgs = JSON.parse(orgs_json) rescue []
+    current_org = orgs.find { |o| o["current"] }&.fetch("name", nil)
+
+    data.each do |db|
+      ns = db.dig("metadata", "namespace") || ""
+      name = db.dig("metadata", "name") || ""
+      project = current_org && ns.start_with?("#{current_org}-") ? ns.delete_prefix("#{current_org}-") : ns
+      puts "#{project}-#{name}"
+    end
+  ' 2>/dev/null
+}
+
+# Sets the candidates following a command path in the caller's scope
+_<%= program_name %>_context() {
+  commands="" flags="" value_flags="" positional="" passthrough=""
+  case "$1" in
+<% contexts.each do |context| -%>
+    "<%= context.path %>")
+<% unless context.commands.empty? -%>
+      commands="<%= context.commands.join(" ") %>"
+<% end -%>
+      flags="<%= flags(context).join(" ") %>"
+<% unless value_flags(context).empty? -%>
+      value_flags="<%= value_flags(context).join(" ") %>"
+<% end -%>
+<% if context.positional -%>
+      positional="<%= context.positional %>"
+<% end -%>
+<% if context.passthrough -%>
+      passthrough=1
+<% end -%>
+      ;;
+<% end -%>
+  esac
+}
+
+_<%= program_name %>_option_values() {
+  case "$1" in
+<% option_value_completers.each do |flags, completer| -%>
+    <%= flags.join("|") %>) <%= completer %> ;;
+<% end -%>
+  esac
+}
+
+_<%= program_name %>_includes() {
+  [[ -n "$2" && " $1 " == *" $2 "* ]]
+}
+
+# Main completion function
+_<%= program_name %>() {
+  local cur="${COMP_WORDS[COMP_CWORD]}" prev="${COMP_WORDS[COMP_CWORD-1]}"
+  local cmd="" args=0 word i
+  local commands flags value_flags positional passthrough
+  COMPREPLY=()
+
+  _<%= program_name %>_context ""
+  for ((i = 1; i < COMP_CWORD; i++)); do
+    word="${COMP_WORDS[i]}"
+    if [[ "$word" == "--" && -n "$passthrough" ]]; then
+      if ((i + 1 == COMP_CWORD)); then
+        COMPREPLY=($(compgen -c -- "$cur"))
+      else
+        COMPREPLY=($(compgen -f -- "$cur"))
+      fi
+      return
+    elif _<%= program_name %>_includes "$value_flags" "$word"; then
+      ((++i))
+    elif [[ "$word" == -* ]]; then
+      continue
+    elif ((args == 0)) && _<%= program_name %>_includes "$commands" "$word"; then
+      cmd="${cmd:+$cmd:}$word"
+      _<%= program_name %>_context "$cmd"
+    else
+      ((++args))
+    fi
+  done
+
+  if _<%= program_name %>_includes "$value_flags" "$prev"; then
+    COMPREPLY=($(compgen -W "$(_<%= program_name %>_option_values "$prev")" -- "$cur"))
+  elif [[ "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "$flags" -- "$cur"))
+  elif ((args == 0)) && [[ -n "$commands" ]]; then
+    COMPREPLY=($(compgen -W "$commands" -- "$cur"))
+  elif ((args == 0)) && [[ -n "$positional" ]]; then
+    COMPREPLY=($(compgen -W "$($positional)" -- "$cur"))
+  fi
+}
+
+# Register the completion function
+complete -F _<%= program_name %> <%= program_name %> depl
