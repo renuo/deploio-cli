@@ -15,9 +15,11 @@ A CLI for [Deploio](https://www.deplo.io/) that wraps [`nctl`](https://github.co
 ```bash
 git clone https://github.com/renuo/deploio-cli.git
 cd deploio-cli
-bundle install
-bundle exec bin/deploio --help
+bin/setup
 ```
+
+`bin/setup` installs the dependencies and puts `deploio` and `depl` binstubs into `~/.local/bin` (override with `INSTALL_DIR`), so this checkout runs from any directory.
+The binstubs are pinned to the Ruby that ran `bin/setup`; run it again after changing the Ruby version.
 
 ### As a gem
 
@@ -227,20 +229,13 @@ gem build deploio-cli.gemspec
 
 ### Testing commands
 
-The best way to test the commands in the shell is to temporarly set:
-
-```shell
-export PATH="$PWD/bin:$PATH"
-```
-
-to have the `deploio` command binded to the current one, and
+After `bin/setup`, `deploio` runs this checkout, so changes take effect immediately.
+After adding or changing commands or options, refresh the autocompletion options:
 
 ```shell
 eval "$(deploio completion)"               # zsh
 eval "$(deploio completion --shell bash)"  # bash
 ```
-
-to refresh the autocompletion options.
 
 ## License
 
