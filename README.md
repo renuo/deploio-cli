@@ -15,9 +15,11 @@ A CLI for [Deploio](https://www.deplo.io/) that wraps [`nctl`](https://github.co
 ```bash
 git clone https://github.com/renuo/deploio-cli.git
 cd deploio-cli
-bundle install
-bundle exec bin/deploio --help
+bin/setup
 ```
+
+`bin/setup` installs the dependencies and puts `deploio` and `depl` binstubs into `~/.local/bin` (override with `INSTALL_DIR`), so this checkout runs from any directory.
+The binstubs are pinned to the Ruby that ran `bin/setup`; run it again after changing the Ruby version.
 
 ### As a gem
 
@@ -27,10 +29,14 @@ gem install deploio-cli
 
 ## Shell Completion
 
-Enable autocompletion by adding this to your `~/.zshrc` or `~/.bashrc`, or whatever you use:
+Enable autocompletion by adding the line for your shell to its rc file:
 
 ```bash
+# ~/.zshrc
 eval "$(deploio completion)"
+
+# ~/.bashrc
+eval "$(deploio completion --shell bash)"
 ```
 
 After setup, completions work for:
@@ -108,7 +114,8 @@ EXECUTION
   deploio run -a APP -- CMD       Alias for exec
 
 OTHER
-  deploio completion              Generate shell completion script
+  deploio completion              Generate zsh completion script
+  deploio completion -s bash      Generate bash completion script
   deploio version                 Show version
 
 FLAGS
@@ -222,19 +229,13 @@ gem build deploio-cli.gemspec
 
 ### Testing commands
 
-The best way to test the commands in the shell is to temporarly set:
+After `bin/setup`, `deploio` runs this checkout, so changes take effect immediately.
+After adding or changing commands or options, refresh the autocompletion options:
 
 ```shell
-export PATH="$PWD/bin:$PATH"
+eval "$(deploio completion)"               # zsh
+eval "$(deploio completion --shell bash)"  # bash
 ```
-
-to have the `deploio` command binded to the current one, and
-
-```shell
-eval "$(deploio completion)"
-```
-
-to refresh the autocompletion options.
 
 ## License
 

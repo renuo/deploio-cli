@@ -37,7 +37,7 @@ module Deploio
     end
 
     def generate
-      template = File.read(TEMPLATE_PATH)
+      template = File.read(self.class::TEMPLATE_PATH)
       ERB.new(template, trim_mode: "-").result(binding)
     end
 

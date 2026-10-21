@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+bundle install
+
+bin_dir="${INSTALL_DIR:-$HOME/.local/bin}"
+mkdir -p "$bin_dir"
+# Pinned to this Ruby, so the binstub also works where a version manager selects another one
+BUNDLE_BIN="$bin_dir" bundle binstubs deploio-cli --force --shebang "$(ruby -e 'print RbConfig.ruby')"
+ln -sf deploio "$bin_dir/depl"
+echo "Installed deploio and depl into $bin_dir"
+
+case ":$PATH:" in
+  *":$bin_dir:"*) ;;
+  *) echo "Add $bin_dir to your PATH" ;;
+esac
+
+echo 'Enable completion in ~/.bashrc: eval "$(deploio completion --shell bash)"'
+echo 'Enable completion in ~/.zshrc:  eval "$(deploio completion)"'
