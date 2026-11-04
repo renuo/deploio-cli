@@ -1,9 +1,8 @@
-require "time"
-
 module Deploio
   module Commands
     class PostgreSQLBackups < Thor
       include SharedOptions
+      include BackupsHelper
 
       namespace "pg:backups"
 
@@ -72,24 +71,6 @@ module Deploio
           raise Deploio::UnsupportedBackupOperationError,
             "Backups are not supported for databases of kind '#{data["kind"]}'."
         end
-      end
-
-      def format_time(value)
-        Time.parse(value.to_s).localtime.strftime("%Y-%m-%d %H:%M")
-      rescue ArgumentError, TypeError
-        value.to_s
-      end
-
-      def format_size(bytes)
-        bytes = bytes.to_i
-        units = ["B", "KiB", "MiB", "GiB", "TiB"]
-        index = 0
-        size = bytes.to_f
-        while size >= 1024 && index < units.size - 1
-          size /= 1024
-          index += 1
-        end
-        (index.zero? ? "#{bytes} B" : format("%.1f %s", size, units[index]))
       end
     end
   end
