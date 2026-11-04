@@ -10,6 +10,7 @@ require_relative "commands/services"
 require_relative "commands/postgresql_backups"
 require_relative "commands/postgresql"
 require_relative "completion_generator"
+require_relative "bash_completion_generator"
 
 module Deploio
   class CLI < Thor
@@ -28,11 +29,13 @@ module Deploio
       case options[:shell].downcase
       when "zsh"
         puts CompletionGenerator.new.generate
-      when "bash", "fish"
-        Output.error("#{options[:shell]} completion is not yet supported. Only zsh is available.")
+      when "bash"
+        puts BashCompletionGenerator.new.generate
+      when "fish"
+        Output.error("#{options[:shell]} completion is not yet supported. Only zsh and bash are available.")
         exit 1
       else
-        Output.error("Unknown shell: #{options[:shell]}. Supported: zsh")
+        Output.error("Unknown shell: #{options[:shell]}. Supported: zsh, bash")
         exit 1
       end
     end

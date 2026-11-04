@@ -27,10 +27,14 @@ gem install deploio-cli
 
 ## Shell Completion
 
-Enable autocompletion by adding this to your `~/.zshrc` or `~/.bashrc`, or whatever you use:
+Enable autocompletion by adding the line for your shell to its rc file:
 
 ```bash
+# ~/.zshrc
 eval "$(deploio completion)"
+
+# ~/.bashrc
+eval "$(deploio completion --shell bash)"
 ```
 
 After setup, completions work for:
@@ -108,7 +112,8 @@ EXECUTION
   deploio run -a APP -- CMD       Alias for exec
 
 OTHER
-  deploio completion              Generate shell completion script
+  deploio completion              Generate zsh completion script
+  deploio completion -s bash      Generate bash completion script
   deploio version                 Show version
 
 FLAGS
@@ -231,7 +236,8 @@ export PATH="$PWD/bin:$PATH"
 to have the `deploio` command binded to the current one, and
 
 ```shell
-eval "$(deploio completion)"
+eval "$(deploio completion)"               # zsh
+eval "$(deploio completion --shell bash)"  # bash
 ```
 
 to refresh the autocompletion options.

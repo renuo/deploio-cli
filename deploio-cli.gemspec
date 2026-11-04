@@ -23,6 +23,10 @@ Gem::Specification.new do |spec|
 
         eval "$(deploio completion)"
 
+    or this to your ~/.bashrc:
+
+        eval "$(deploio completion --shell bash)"
+
   MSG
 
   spec.files = Dir.chdir(__dir__) do
