@@ -218,14 +218,24 @@ deploio exec -- rails console
 ### Running tests
 
 ```bash
-bundle exec rake test
+bin/check
+bin/fastcheck
 ```
 
-### Building the gem
+### Release
 
-```bash
-gem build deploio-cli.gemspec
-```
+1. Bump the version in `lib/deploio/version.rb`, run `bundle install`, update `CHANGELOG.md` and commit to `main`.
+2. Tag the commit with the bare version and push the tag:
+
+   ```bash
+   git tag -a 1.2.3 -m 1.2.3
+   git push origin 1.2.3
+   ```
+
+3. Create a GitHub release for the tag with the changelog section as notes.
+
+Semaphore runs the tests on the tag and, when they pass, promotes the `release` pipeline, which pushes the gem to
+[rubygems.org](https://rubygems.org). It fails when the tag does not match the gem version.
 
 ### Testing commands
 

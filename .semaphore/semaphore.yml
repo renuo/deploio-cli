@@ -1,0 +1,50 @@
+version: "v1.0"
+name: deploio-cli
+agent:
+  machine:
+    type: f1-standard-2
+    os_image: ubuntu2404
+auto_cancel:
+  running:
+    when: "true"
+
+global_job_config:
+  prologue:
+    commands:
+      - checkout --use-cache
+      - sem-version ruby $RUBY_VERSION -f
+      - cache restore gems-$RUBY_VERSION-$(checksum Gemfile.lock)
+      - bundle config set path 'vendor/bundle'
+      - bundle install -j 4
+      - cache store gems-$RUBY_VERSION-$(checksum Gemfile.lock) vendor/bundle
+
+blocks:
+  - name: linter
+    execution_time_limit:
+      minutes: 5
+    dependencies: []
+    task:
+      env_vars:
+        - name: RUBY_VERSION
+          value: "3.4"
+      jobs:
+        - name: fastcheck
+          commands:
+            - bin/fastcheck
+  - name: tests
+    execution_time_limit:
+      minutes: 10
+    dependencies: []
+    task:
+      jobs:
+        - name: check
+          matrix:
+            - env_var: RUBY_VERSION
+              values: ["3.3", "3.4", "4.0"]
+          commands:
+            - bin/check
+promotions:
+  - name: release
+    pipeline_file: release.yml
+    auto_promote:
+      when: "result = 'passed' and tag =~ '^[0-9]+[.][0-9]+[.][0-9]+$'"
