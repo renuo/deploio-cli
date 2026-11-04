@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 - 2026-11-04
+
+- Remove the duplicate `homepage_uri` gem metadata that made `gem build` warn
+
 ## 0.4.0 - 2026-11-04
 
 - Add `mysql` commands, including MySQL database backups ([#5](https://github.com/renuo/deploio-cli/pull/5))
